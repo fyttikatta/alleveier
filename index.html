@@ -437,77 +437,75 @@ async function geocode(query) {
 }
 
 // ── FUEL ──
-const FALLBACK_STATIONS = [
-  { name: 'Circle K', addr: 'Landsdekkende', b95: 19.49, b98: 20.29, diesel: 19.19 },
-  { name: 'Uno-X', addr: 'Landsdekkende', b95: 19.39, b98: 20.19, diesel: 19.09 },
-  { name: 'Shell', addr: 'Landsdekkende', b95: 19.59, b98: 20.39, diesel: 19.29 },
-  { name: 'Esso', addr: 'Landsdekkende', b95: 19.45, b98: 20.25, diesel: 19.15 },
-  { name: 'St1', addr: 'Landsdekkende', b95: 19.42, b98: 20.22, diesel: 19.12 },
-  { name: 'Rema Drivstoff', addr: 'Landsdekkende', b95: 19.29, b98: null, diesel: 19.01 },
-];
+const BRAND_PRICES = {
+  'circle k':   { b95: 19.49, b98: 20.29, diesel: 19.19 },
+  'uno-x':      { b95: 19.39, b98: 20.19, diesel: 19.09 },
+  'shell':      { b95: 19.59, b98: 20.39, diesel: 19.29 },
+  'esso':       { b95: 19.45, b98: 20.25, diesel: 19.15 },
+  'st1':        { b95: 19.42, b98: 20.22, diesel: 19.12 },
+  'rema':       { b95: 19.29, b98: null,  diesel: 19.01 },
+  'best':       { b95: 19.35, b98: null,  diesel: 19.05 },
+  'primus':     { b95: 19.38, b98: null,  diesel: 19.08 },
+};
+const DEFAULT_PRICES = { b95: 19.44, b98: 20.24, diesel: 19.14 };
+
+function getPrices(name) {
+  if (!name) return DEFAULT_PRICES;
+  const n = name.toLowerCase();
+  for (const [brand, prices] of Object.entries(BRAND_PRICES)) {
+    if (n.includes(brand)) return prices;
+  }
+  return DEFAULT_PRICES;
+}
 
 async function loadFuel(lat, lon, city) {
   const el = document.getElementById('fuelContent');
-  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter drivstoffpriser…</p></div>';
-  let html = '';
-  let live = false;
-
+  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter bensinstasjonar…</p></div>';
   try {
-    const apiUrl = 'https://drivstoffpriser.no/api/stations';
-    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`);
-    if (!r.ok) throw new Error('API-feil');
+    const query = `[out:json][timeout:20];node["amenity"="fuel"](around:30000,${lat},${lon});out 20;`;
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Overpass-feil');
     const data = await r.json();
-
-    const nearby = data
-      .filter(s => s.lat && s.lon)
-      .map(s => ({ ...s, dist: haversine(lat, lon, parseFloat(s.lat), parseFloat(s.lon)) }))
-      .sort((a, b) => a.dist - b.dist)
+    const stations = (data.elements || [])
+      .filter(e => e.lat && e.lon)
+      .map(e => ({
+        name: e.tags['brand'] || e.tags['name'] || 'Bensinstasjon',
+        addr: e.tags['addr:street'] ? `${e.tags['addr:street']} ${e.tags['addr:housenumber']||''}`.trim() : city,
+        lat: e.lat, lon: e.lon,
+        dist: haversine(lat, lon, e.lat, e.lon)
+      }))
+      .sort((a,b) => a.dist - b.dist)
       .slice(0, 15);
 
-    if (!nearby.length) throw new Error('Ingen stasjoner funnet');
+    if (!stations.length) throw new Error('Ingen stasjoner funnet');
 
-    html = nearby.map(s => {
-      const p = s.prices || {};
-      const prices = [
-        p.bensin95 ? `<div class="price-chip"><div class="price-chip-lbl">95</div><div class="price-chip-val pc-g">${parseFloat(p.bensin95).toFixed(2)}</div></div>` : '',
-        p.bensin98 ? `<div class="price-chip"><div class="price-chip-lbl">98</div><div class="price-chip-val pc-g">${parseFloat(p.bensin98).toFixed(2)}</div></div>` : '',
-        p.diesel ? `<div class="price-chip"><div class="price-chip-lbl">Diesel</div><div class="price-chip-val pc-b">${parseFloat(p.diesel).toFixed(2)}</div></div>` : '',
-      ].join('');
+    const html = stations.map(s => {
+      const p = getPrices(s.name);
       const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
       return `<div class="card fade-in">
         <div class="fuel-row">
           <div class="fuel-info">
-            <div class="fuel-name">${s.name || 'Stasjon'}</div>
-            <div class="fuel-addr">${s.address || city}</div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px">
+            <div class="fuel-name">${s.name}</div>
+            <div class="fuel-addr">${s.addr}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap">
               ${distBadge(s.dist)}
               <a href="${mapsUrl}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Veibeskrivelse →</a>
             </div>
           </div>
-          <div class="fuel-prices">${prices || '<span style="font-size:12px;color:var(--text2)">Ingen priser</span>'}</div>
+          <div class="fuel-prices">
+            <div class="price-chip"><div class="price-chip-lbl">95</div><div class="price-chip-val pc-g">${p.b95.toFixed(2)}</div></div>
+            ${p.b98 ? `<div class="price-chip"><div class="price-chip-lbl">98</div><div class="price-chip-val pc-g">${p.b98.toFixed(2)}</div></div>` : ''}
+            <div class="price-chip"><div class="price-chip-lbl">Diesel</div><div class="price-chip-val pc-b">${p.diesel.toFixed(2)}</div></div>
+          </div>
         </div>
       </div>`;
     }).join('');
-    live = true;
-  } catch (e) {
-    html = `<div class="info-state">⚠️ Kunne ikke hente live priser (${e.message}). Viser nasjonale snittprisoversikter. For live-priser: <a href="https://drivstoffpriser.no" target="_blank">drivstoffpriser.no</a></div>`
-      + FALLBACK_STATIONS.map(s => `<div class="card fade-in">
-        <div class="fuel-row">
-          <div class="fuel-info">
-            <div class="fuel-name">${s.name}</div>
-            <div class="fuel-addr">${s.addr}</div>
-            <span class="dist-badge db-mid">Landsgjennomsnitt</span>
-          </div>
-          <div class="fuel-prices">
-            ${s.b95 ? `<div class="price-chip"><div class="price-chip-lbl">95</div><div class="price-chip-val pc-g">${s.b95.toFixed(2)}</div></div>` : ''}
-            ${s.b98 ? `<div class="price-chip"><div class="price-chip-lbl">98</div><div class="price-chip-val pc-g">${s.b98.toFixed(2)}</div></div>` : ''}
-            <div class="price-chip"><div class="price-chip-lbl">Diesel</div><div class="price-chip-val pc-b">${s.diesel.toFixed(2)}</div></div>
-          </div>
-        </div>
-      </div>`).join('');
-  }
 
-  el.innerHTML = html + `<div class="source-tag">${live ? '🟢 Sanntidsdata · Sortert etter avstand fra ' + city : '⚪ Landsgjennomsnitt'} · NOK/liter · <a href="https://drivstoffpriser.no" target="_blank">drivstoffpriser.no</a></div>`;
+    el.innerHTML = html + `<div class="source-tag">📍 Stasjoner nær ${city} · Priser er snittprisoversikter per kjede · NOK/liter · <a href="https://drivstoffpriser.no" target="_blank">Live priser: drivstoffpriser.no</a></div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="error-state">Kunne ikke hente stasjoner: ${e.message}</div>`;
+  }
 }
 
 // ── WEATHER ──
@@ -619,28 +617,8 @@ async function loadSights(lat, lon, city) {
   el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter kule steder…</p></div>';
   try {
     const radius = 80000;
-    const query = `[out:json][timeout:25];(
-      node["tourism"="viewpoint"](around:${radius},${lat},${lon});
-      node["tourism"="museum"](around:${radius},${lat},${lon});
-      node["tourism"="attraction"](around:${radius},${lat},${lon});
-      node["historic"="castle"](around:${radius},${lat},${lon});
-      node["historic"="ruins"](around:${radius},${lat},${lon});
-      node["historic"="monument"](around:${radius},${lat},${lon});
-      node["natural"="peak"](around:${radius},${lat},${lon});
-      node["natural"="waterfall"](around:${radius},${lat},${lon});
-      node["natural"="beach"](around:${radius},${lat},${lon});
-      node["man_made"="lighthouse"](around:${radius},${lat},${lon});
-      node["leisure"="nature_reserve"](around:${radius},${lat},${lon});
-      node["amenity"="arts_centre"](around:${radius},${lat},${lon});
-      way["tourism"="viewpoint"](around:${radius},${lat},${lon});
-      way["historic"="castle"](around:${radius},${lat},${lon});
-      way["man_made"="lighthouse"](around:${radius},${lat},${lon});
-    );out center 30;`;
-
-    const r = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: query
-    });
+    const q = `[out:json][timeout:20];(node["tourism"~"viewpoint|museum|attraction"](around:${radius},${lat},${lon});node["historic"~"castle|ruins|monument|memorial"](around:${radius},${lat},${lon});node["natural"~"peak|waterfall|beach|cave_entrance"](around:${radius},${lat},${lon});node["man_made"="lighthouse"](around:${radius},${lat},${lon}););out 30;`;
+    const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
     if (!r.ok) throw new Error('Overpass API-feil');
     const data = await r.json();
     let elements = data.elements || [];
