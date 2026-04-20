@@ -367,6 +367,22 @@
     </div>
     <div id="sightsContent"><div class="loading-state"><div class="spinner"></div><p>Finner attraksjoner…</p></div></div>
   </section>
+
+  <section id="stay" class="section">
+    <div class="sec-header">
+      <h2>Overnatting</h2>
+      <p>Hotell, hytter og camping i nærheten</p>
+    </div>
+    <div id="stayContent"><div class="loading-state"><div class="spinner"></div><p>Leter etter overnatting…</p></div></div>
+  </section>
+
+  <section id="food" class="section">
+    <div class="sec-header">
+      <h2>Spis & Drikk</h2>
+      <p>Fastfood, restauranter og kafeer i nærheten</p>
+    </div>
+    <div id="foodContent"><div class="loading-state"><div class="spinner"></div><p>Leter etter spisesteder…</p></div></div>
+  </section>
 </main>
 
 <!-- Mobile bottom nav -->
@@ -380,6 +396,12 @@
     </button>
     <button class="bnav-btn" data-tab="sights" onclick="switchTab('sights', this)">
       <span class="bnav-icon">📍</span> Steder
+    </button>
+    <button class="bnav-btn" data-tab="stay" onclick="switchTab('stay', this)">
+      <span class="bnav-icon">🏨</span> Sov
+    </button>
+    <button class="bnav-btn" data-tab="food" onclick="switchTab('food', this)">
+      <span class="bnav-icon">🍔</span> Mat
     </button>
   </div>
 </nav>
@@ -462,11 +484,15 @@ async function loadFuel(lat, lon, city) {
   const el = document.getElementById('fuelContent');
   el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter bensinstasjonar…</p></div>';
   try {
-    const query = `[out:json][timeout:20];node["amenity"="fuel"](around:30000,${lat},${lon});out 20;`;
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    const r = await fetch(url);
+    const query = `[out:json][timeout:25];node["amenity"="fuel"](around:40000,${lat},${lon});out 20;`;
+    const url = `https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(query)}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    const r = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
     if (!r.ok) throw new Error('Overpass-feil');
-    const data = await r.json();
+    const text = await r.text();
+    const data = JSON.parse(text);
     const stations = (data.elements || [])
       .filter(e => e.lat && e.lon)
       .map(e => ({
@@ -514,7 +540,7 @@ async function loadWeather(lat, lon, city) {
   el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter vær fra Yr.no…</p></div>';
   try {
     const metUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`;
-    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(metUrl)}`);
+    const r = await fetch(metUrl);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     const ts = data.properties.timeseries;
@@ -617,14 +643,27 @@ async function loadSights(lat, lon, city) {
   el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter kule steder…</p></div>';
   try {
     const radius = 80000;
-    const q = `[out:json][timeout:20];(node["tourism"~"viewpoint|museum|attraction"](around:${radius},${lat},${lon});node["historic"~"castle|ruins|monument|memorial"](around:${radius},${lat},${lon});node["natural"~"peak|waterfall|beach|cave_entrance"](around:${radius},${lat},${lon});node["man_made"="lighthouse"](around:${radius},${lat},${lon}););out 30;`;
-    const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
+    const q = `[out:json][timeout:25];(node["tourism"~"viewpoint|museum|attraction"](around:${radius},${lat},${lon});node["historic"~"castle|ruins|monument|memorial"](around:${radius},${lat},${lon});node["natural"~"waterfall|beach|cave_entrance"](around:${radius},${lat},${lon});node["man_made"="lighthouse"](around:${radius},${lat},${lon});node["natural"="peak"]["ele"](around:${radius},${lat},${lon}););out 40;`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    const r = await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+    clearTimeout(t);
     if (!r.ok) throw new Error('Overpass API-feil');
-    const data = await r.json();
+    const data = JSON.parse(await r.text());
     let elements = data.elements || [];
 
     elements = elements
-      .filter(e => e.tags && (e.tags.name || e.tags['name:no']))
+      .filter(e => e.tags && (e.tags['name:no'] || e.tags.name))
+      .filter(e => {
+        // Filter out vague peaks without elevation or with very generic names
+        if (e.tags.natural === 'peak') {
+          const ele = parseInt(e.tags.ele || '0');
+          const name = (e.tags['name:no'] || e.tags.name || '').toLowerCase();
+          // Keep peaks with elevation > 300m or interesting names
+          return ele > 300 || name.includes('topp') || name.includes('fjell') || name.includes('horn');
+        }
+        return true;
+      })
       .map(e => ({
         ...e,
         lat: e.lat || e.center?.lat,
@@ -685,7 +724,8 @@ async function loadSights(lat, lon, city) {
               <span style="font-size:11px;background:rgba(79,168,232,0.1);color:var(--accent);padding:2px 8px;border-radius:20px;">${t.label}</span>
               <span class="dist-badge ${dbc}">📍 ${e.dist.toFixed(1)} km</span>
             </div>
-            ${desc ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5;">${desc.substring(0,120)}${desc.length>120?'…':''}</div>` : ''}
+            ${e.tags.ele ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;">⬆️ ${e.tags.ele} m over havet</div>` : ''}
+            ${desc && !e.tags.ele ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5;">${desc.substring(0,120)}${desc.length>120?'…':''}</div>` : ''}
             <div class="sight-btns">
               <a class="btn-primary" href="${mapsUrl}" target="_blank" style="text-decoration:none;">Veibeskrivelse</a>
               ${e.tags.wikipedia ? `<a class="btn-outline" href="https://no.wikipedia.org/wiki/${encodeURIComponent(e.tags.wikipedia.replace('no:',''))}" target="_blank">Wikipedia</a>` : ''}
@@ -699,6 +739,177 @@ async function loadSights(lat, lon, city) {
   }
 }
 
+
+// ── OVERNATTING ──
+async function loadStay(lat, lon, city) {
+  const el = document.getElementById('stayContent');
+  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter overnatting…</p></div>';
+  try {
+    const q = `[out:json][timeout:25];(node["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet|alpine_hut|wilderness_hut"](around:40000,${lat},${lon});way["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet"](around:40000,${lat},${lon}););out center 30;`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    const r = await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) throw new Error('Feil fra API');
+    const data = JSON.parse(await r.text());
+    let items = (data.elements || [])
+      .filter(e => e.tags && (e.tags.name || e.tags['name:no']))
+      .map(e => ({
+        name: e.tags['name:no'] || e.tags.name,
+        type: e.tags.tourism,
+        stars: e.tags.stars || null,
+        phone: e.tags.phone || e.tags['contact:phone'] || null,
+        website: e.tags.website || e.tags['contact:website'] || null,
+        lat: e.lat || e.center?.lat,
+        lon: e.lon || e.center?.lon,
+        dist: haversine(lat, lon, e.lat || e.center?.lat, e.lon || e.center?.lon)
+      }))
+      .filter(e => e.lat && e.lon)
+      .sort((a,b) => a.dist - b.dist)
+      .slice(0, 20);
+
+    if (!items.length) {
+      el.innerHTML = '<div class="loading-state"><p>Ingen overnatting funnet i nærheten.</p></div>';
+      return;
+    }
+
+    const typeLabels = {
+      hotel: { icon: '🏨', label: 'Hotell' },
+      hostel: { icon: '🛏️', label: 'Hostel' },
+      guest_house: { icon: '🏡', label: 'Pensjonat' },
+      motel: { icon: '🚗', label: 'Motell' },
+      camp_site: { icon: '⛺', label: 'Camping' },
+      chalet: { icon: '🏔️', label: 'Hytte' },
+      alpine_hut: { icon: '🏕️', label: 'Fjellhytte' },
+      wilderness_hut: { icon: '🪵', label: 'Utmarkshytte' },
+    };
+
+    el.innerHTML = items.map(s => {
+      const ti = typeLabels[s.type] || { icon: '🏠', label: 'Overnatting' };
+      const dbc = s.dist < 5 ? 'db-near' : s.dist < 20 ? 'db-mid' : 'db-far';
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+      const stars = s.stars ? '⭐'.repeat(Math.min(parseInt(s.stars), 5)) : '';
+      return `<div class="card fade-in">
+        <div class="sight-row">
+          <div class="sight-ico">${ti.icon}</div>
+          <div class="sight-body">
+            <div class="sight-title">${s.name}</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
+              <span style="font-size:11px;background:rgba(79,168,232,0.1);color:var(--accent);padding:2px 8px;border-radius:20px;">${ti.label}</span>
+              <span class="dist-badge ${dbc}">📍 ${s.dist.toFixed(1)} km</span>
+              ${stars ? `<span style="font-size:11px;">${stars}</span>` : ''}
+            </div>
+            <div class="sight-btns">
+              <a class="btn-primary" href="${mapsUrl}" target="_blank" style="text-decoration:none;">Veibeskrivelse</a>
+              ${s.website ? `<a class="btn-outline" href="${s.website}" target="_blank">Nettside</a>` : ''}
+              ${s.phone ? `<a class="btn-outline" href="tel:${s.phone}">${s.phone}</a>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('') + `<div class="source-tag">OpenStreetMap · Overnatting innen 40km fra ${city}</div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="error-state">Kunne ikke laste overnatting: ${e.message}</div>`;
+  }
+}
+
+// ── MAT OG FASTFOOD ──
+async function loadFood(lat, lon, city) {
+  const el = document.getElementById('foodContent');
+  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter spisesteder…</p></div>';
+  try {
+    const q = `[out:json][timeout:25];(node["amenity"~"restaurant|fast_food|cafe|pub|bar|food_court"](around:20000,${lat},${lon}););out 40;`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    const r = await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) throw new Error('Feil fra API');
+    const data = JSON.parse(await r.text());
+
+    let items = (data.elements || [])
+      .filter(e => e.tags && e.tags.name)
+      .map(e => ({
+        name: e.tags.name,
+        type: e.tags.amenity,
+        cuisine: e.tags.cuisine || null,
+        brand: e.tags.brand || null,
+        phone: e.tags.phone || e.tags['contact:phone'] || null,
+        website: e.tags.website || e.tags['contact:website'] || null,
+        opening: e.tags.opening_hours || null,
+        lat: e.lat, lon: e.lon,
+        dist: haversine(lat, lon, e.lat, e.lon)
+      }))
+      .sort((a,b) => a.dist - b.dist)
+      .slice(0, 25);
+
+    if (!items.length) {
+      el.innerHTML = '<div class="loading-state"><p>Ingen spisesteder funnet i nærheten.</p></div>';
+      return;
+    }
+
+    // Known fast food brand icons
+    const brandIcons = {
+      "burger king": "👑", "mcdonald's": "🍟", "mcdonalds": "🍟",
+      "kfc": "🍗", "subway": "🥖", "pizza hut": "🍕",
+      "domino's": "🍕", "dominos": "🍕", "taco bell": "🌮",
+      "peppes": "🍕", "peppes pizza": "🍕", "little caesar": "🍕",
+      "max burgers": "🍔", "max": "🍔", "denny's": "🥞",
+      "starbucks": "☕", "waynes coffee": "☕", "espresso house": "☕",
+      "seven eleven": "🏪", "7-eleven": "🏪",
+    };
+
+    const typeInfo = {
+      fast_food:   { icon: '🍔', label: 'Fastfood' },
+      restaurant:  { icon: '🍽️', label: 'Restaurant' },
+      cafe:        { icon: '☕', label: 'Kafé' },
+      pub:         { icon: '🍺', label: 'Pub' },
+      bar:         { icon: '🍹', label: 'Bar' },
+      food_court:  { icon: '🏪', label: 'Foodcourt' },
+    };
+
+    const cuisineLabels = {
+      pizza: '🍕 Pizza', burger: '🍔 Burger', sushi: '🍣 Sushi',
+      chinese: '🥡 Kinesisk', indian: '🍛 Indisk', thai: '🍜 Thai',
+      italian: '🍝 Italiensk', mexican: '🌮 Meksikansk',
+      kebab: '🥙 Kebab', fish_and_chips: '🐟 Fish & Chips',
+      seafood: '🦞 Sjømat', norwegian: '🇳🇴 Norsk mat',
+      sandwich: '🥪 Sandwich', ice_cream: '🍦 Is',
+      coffee_shop: '☕ Kaffe',
+    };
+
+    el.innerHTML = items.map(s => {
+      const ti = typeInfo[s.type] || { icon: '🍽️', label: 'Spisestad' };
+      const nameLower = s.name.toLowerCase();
+      const brandIcon = Object.entries(brandIcons).find(([b]) => nameLower.includes(b))?.[1];
+      const icon = brandIcon || ti.icon;
+      const dbc = s.dist < 2 ? 'db-near' : s.dist < 10 ? 'db-mid' : 'db-far';
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+      const cuisineTag = s.cuisine ? cuisineLabels[s.cuisine.split(';')[0]] : null;
+      return `<div class="card fade-in">
+        <div class="sight-row">
+          <div class="sight-ico" style="font-size:22px">${icon}</div>
+          <div class="sight-body">
+            <div class="sight-title">${s.name}</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
+              <span style="font-size:11px;background:rgba(79,168,232,0.1);color:var(--accent);padding:2px 8px;border-radius:20px;">${ti.label}</span>
+              <span class="dist-badge ${dbc}">📍 ${s.dist.toFixed(1)} km</span>
+              ${cuisineTag ? `<span style="font-size:11px;color:var(--text2)">${cuisineTag}</span>` : ''}
+            </div>
+            ${s.opening ? `<div style="font-size:11px;color:var(--text2);margin-top:4px;">🕐 ${s.opening}</div>` : ''}
+            <div class="sight-btns">
+              <a class="btn-primary" href="${mapsUrl}" target="_blank" style="text-decoration:none;">Veibeskrivelse</a>
+              ${s.website ? `<a class="btn-outline" href="${s.website}" target="_blank">Nettside</a>` : ''}
+              ${s.phone ? `<a class="btn-outline" href="tel:${s.phone}">Ring</a>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('') + `<div class="source-tag">OpenStreetMap · Spisesteder innen 20km fra ${city}</div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="error-state">Kunne ikke laste spisesteder: ${e.message}</div>`;
+  }
+}
+
 // ── MAIN SEARCH ──
 async function handleSearch() {
   const query = document.getElementById('cityInput').value.trim() || 'Oslo';
@@ -709,6 +920,8 @@ async function handleSearch() {
     loadFuel(geo.lat, geo.lon, geo.name);
     loadWeather(geo.lat, geo.lon, geo.name);
     loadSights(geo.lat, geo.lon, geo.name);
+    loadStay(geo.lat, geo.lon, geo.name);
+    loadFood(geo.lat, geo.lon, geo.name);
   } catch (e) {
     ['fuelContent', 'weatherContent', 'sightsContent'].forEach(id => {
       document.getElementById(id).innerHTML = `<div class="error-state">${e.message}</div>`;
