@@ -178,11 +178,17 @@ function dbadge(d){const c=d<5?'dbn':d<20?'dbm':'dbf';return`<span class="db ${c
 function wIcon(c){if(!c)return'🌡️';if(c.includes('thunder'))return'⛈️';if(c.includes('snow'))return'❄️';if(c.includes('sleet'))return'🌨️';if(c.includes('heavyrain'))return'🌧️';if(c.includes('rain')||c.includes('shower'))return'🌦️';if(c.includes('fog'))return'🌫️';if(c.includes('partlycloudy'))return'⛅';if(c.includes('cloudy'))return'☁️';if(c.includes('fair'))return'🌤️';if(c.includes('clear'))return'☀️';return'🌡️';}
 function wDir(d){return['N','NØ','Ø','SØ','S','SV','V','NV'][Math.round(d/45)%8];}
 async function ovp(q){
-  const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),18000);
-  const r=await fetch('https://overpass.kumi.systems/api/interpreter?data='+encodeURIComponent(q),{signal:ctrl.signal});
-  clearTimeout(t);
-  if(!r.ok)throw new Error('API-feil '+r.status);
-  return JSON.parse(await r.text());
+  const mirrors=['https://overpass.kumi.systems/api/interpreter','https://overpass-api.de/api/interpreter'];
+  for(const url of mirrors){
+    try{
+      const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),15000);
+      const r=await fetch(url+'?data='+encodeURIComponent(q),{signal:ctrl.signal});
+      clearTimeout(t);
+      if(!r.ok)continue;
+      return JSON.parse(await r.text());
+    }catch(e){continue;}
+  }
+  throw new Error('Alle Overpass-servere utilgjengelige');
 }
 async function geocode(q){
   const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q+' Norway')+'&format=json&limit=1',{headers:{'Accept-Language':'no'}});
@@ -206,23 +212,34 @@ async function loadFuel(lat,lon,city){
   }catch(e){el.innerHTML=`<div class="err">Kunne ikke hente stasjoner: ${e.message}</div>`;}
 }
 
-// WEATHER
+// WEATHER - Open-Meteo (free, no API key, CORS-friendly)
+function omIcon(c){
+  if(c===0)return'☀️';if(c<=2)return'🌤️';if(c===3)return'☁️';
+  if(c<=48)return'🌫️';if(c<=55)return'🌦️';if(c<=65)return'🌧️';
+  if(c<=77)return'❄️';if(c<=82)return'🌦️';if(c<=86)return'🌨️';
+  if(c<=95)return'⛈️';return'⛈️';
+}
 async function loadWeather(lat,lon,city){
   const el=document.getElementById('weatherContent');
-  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter vær fra Yr.no…</p></div>';
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter vær…</p></div>';
   try{
-    const r=await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,cloud_cover,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
+    const r=await fetch(url);
     if(!r.ok)throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    const ts=data.properties.timeseries,now=ts[0],ins=now.data.instant.details;
-    const next=now.data.next_1_hours||now.data.next_6_hours;
-    const sym=next?.summary?.symbol_code||'',precip=next?.details?.precipitation_amount||0;
-    const temp=Math.round(ins.air_temperature),wind=Math.round(ins.wind_speed),hum=Math.round(ins.relative_humidity),pres=Math.round(ins.air_pressure_at_sea_level),cloud=Math.round(ins.cloud_area_fraction),uv=Math.round(ins.ultraviolet_index_clear_sky||0);
-    const feels=Math.round(temp-wind*0.5),uvC=uv<3?'uv-low':uv<6?'uv-mid':'uv-high',uvL=uv<3?'Lav UV':uv<6?'Moderat UV':'Høy UV';
-    const daily=[],seen=new Set();
-    for(const t of ts){const date=t.time.split('T')[0];if(!seen.has(date)&&t.data.next_6_hours){seen.add(date);const s=t.data.next_6_hours.summary.symbol_code;daily.push({day:new Date(t.time).toLocaleDateString('nb-NO',{weekday:'short'}),icon:wIcon(s),hi:Math.round(t.data.next_6_hours.details.air_temperature_max||t.data.instant.details.air_temperature),lo:Math.round(t.data.next_6_hours.details.air_temperature_min||t.data.instant.details.air_temperature-3)});if(daily.length>=7)break;}}
-    el.innerHTML=`<div class="card"><div class="wx-hero"><span class="wx-icon">${wIcon(sym)}</span><div><div class="wx-temp">${temp}°</div><div class="wx-city">${city}</div><div class="wx-feels">Føles som ${feels}°C · <span class="${uvC}">${uvL} ${uv}</span></div></div></div><div class="wx-grid"><div class="wx-m"><div class="wx-ml">Vind</div><div class="wx-mv">${wind}<span class="wx-mu"> m/s</span></div><div class="wx-ms">${wDir(ins.wind_from_direction||0)}</div></div><div class="wx-m"><div class="wx-ml">Luftfukt.</div><div class="wx-mv">${hum}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">Trykk</div><div class="wx-mv">${pres}<span class="wx-mu"> hPa</span></div></div><div class="wx-m"><div class="wx-ml">Nedbør</div><div class="wx-mv">${precip.toFixed(1)}<span class="wx-mu"> mm</span></div></div><div class="wx-m"><div class="wx-ml">Skydekke</div><div class="wx-mv">${cloud}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">UV-indeks</div><div class="wx-mv">${uv}</div></div></div><div class="fc-lbl">7-dagersvarsel</div><div class="fc-row">${daily.map((d,i)=>`<div class="fc-item${i===0?' today':''}"><div class="fc-day">${i===0?'I dag':d.day}</div><div class="fc-ico">${d.icon}</div><div class="fc-hi">${d.hi}°</div><div class="fc-lo">${d.lo}°</div></div>`).join('')}</div><div class="src" style="margin-top:12px">🟢 Sanntidsdata · <a href="https://yr.no" target="_blank">yr.no</a> · Oppdateres hver time</div></div>`;
-  }catch(e){el.innerHTML=`<div class="err">Kunne ikke hente vær: ${e.message}. Prøv <a href="https://yr.no" target="_blank">yr.no</a></div>`;}
+    const d=await r.json();
+    const c=d.current,cu=d.current_units,daily=d.daily;
+    const temp=Math.round(c.temperature_2m),wind=Math.round(c.wind_speed_10m),hum=Math.round(c.relative_humidity_2m),pres=Math.round(c.surface_pressure),cloud=Math.round(c.cloud_cover),uv=Math.round(c.uv_index||0),precip=c.precipitation||0;
+    const feels=Math.round(temp-wind*0.3);
+    const uvC=uv<3?'uv-low':uv<6?'uv-mid':'uv-high',uvL=uv<3?'Lav UV':uv<6?'Moderat UV':'Høy UV';
+    const icon=omIcon(c.weather_code);
+    const days=daily.time.map((t,i)=>({
+      day:new Date(t).toLocaleDateString('nb-NO',{weekday:'short'}),
+      icon:omIcon(daily.weather_code[i]),
+      hi:Math.round(daily.temperature_2m_max[i]),
+      lo:Math.round(daily.temperature_2m_min[i])
+    }));
+    el.innerHTML=`<div class="card"><div class="wx-hero"><span class="wx-icon">${icon}</span><div><div class="wx-temp">${temp}°</div><div class="wx-city">${city}</div><div class="wx-feels">Føles som ${feels}°C · <span class="${uvC}">${uvL} ${uv}</span></div></div></div><div class="wx-grid"><div class="wx-m"><div class="wx-ml">Vind</div><div class="wx-mv">${wind}<span class="wx-mu"> m/s</span></div><div class="wx-ms">${wDir(c.wind_direction_10m||0)}</div></div><div class="wx-m"><div class="wx-ml">Luftfukt.</div><div class="wx-mv">${hum}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">Trykk</div><div class="wx-mv">${pres}<span class="wx-mu"> hPa</span></div></div><div class="wx-m"><div class="wx-ml">Nedbør</div><div class="wx-mv">${precip.toFixed(1)}<span class="wx-mu"> mm</span></div></div><div class="wx-m"><div class="wx-ml">Skydekke</div><div class="wx-mv">${cloud}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">UV-indeks</div><div class="wx-mv">${uv}</div></div></div><div class="fc-lbl">7-dagersvarsel</div><div class="fc-row">${days.map((d,i)=>`<div class="fc-item${i===0?' today':''}"><div class="fc-day">${i===0?'I dag':d.day}</div><div class="fc-ico">${d.icon}</div><div class="fc-hi">${d.hi}°</div><div class="fc-lo">${d.lo}°</div></div>`).join('')}</div><div class="src" style="margin-top:12px">🟢 Sanntidsdata · open-meteo.com · Oppdateres hver time</div></div>`;
+  }catch(e){el.innerHTML=`<div class="err">Kunne ikke hente vær: ${e.message}</div>`;}
 }
 
 // SEVERDIGHETER
@@ -234,8 +251,19 @@ async function loadSights(lat,lon,city){
   try{
     const R=80000,q=`[out:json][timeout:25];(node["tourism"~"viewpoint|museum|attraction"](around:${R},${lat},${lon});node["historic"~"castle|ruins|monument|memorial"](around:${R},${lat},${lon});node["natural"~"waterfall|beach|cave_entrance"](around:${R},${lat},${lon});node["man_made"="lighthouse"](around:${R},${lat},${lon});node["natural"="peak"]["ele"](around:${R},${lat},${lon}););out 40;`;
     const data=await ovp(q);
-    let items=(data.elements||[]).filter(e=>e.tags&&(e.tags['name:no']||e.tags.name)).filter(e=>e.tags.natural!=='peak'||parseInt(e.tags.ele||'0')>300).map(e=>({...e,name:e.tags['name:no']||e.tags.name,dist:hav(lat,lon,e.lat,e.lon)})).filter(e=>e.lat&&e.lon).sort((a,b)=>a.dist-b.dist).slice(0,20);
-    if(!items.length){el.innerHTML='<div class="empty">Ingen severdigheter funnet. Prøv en større by i nærheten.</div>';return;}
+    let items=(data.elements||[]).filter(e=>e.tags&&(e.tags['name:no']||e.tags.name)).filter(e=>e.tags&&(e.tags['name:no']||e.tags.name)).map(e=>({...e,name:e.tags['name:no']||e.tags.name,dist:hav(lat,lon,e.lat,e.lon)})).filter(e=>e.lat&&e.lon).sort((a,b)=>a.dist-b.dist).slice(0,20);
+    if(!items.length){
+      // Wikipedia fallback
+      try{
+        const wr=await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=100000&gslimit=20&format=json&origin=*`);
+        const wd=await wr.json();
+        const wp=(wd.query?.geosearch||[]).map(p=>({name:p.title,dist:hav(lat,lon,p.lat,p.lon),lat:p.lat,lon:p.lon,pageid:p.pageid,wiki:true})).sort((a,b)=>a.dist-b.dist);
+        if(!wp.length){el.innerHTML='<div class="empty">Ingen severdigheter funnet i nærheten.</div>';return;}
+        const wicons=['🏔️','🏰','⛪','🏛️','🎨','🌊','🌲','🦌','🏞️','⛵','🗿','🎿','🌋'];
+        el.innerHTML=wp.map((p,i)=>{const dc=p.dist<10?'dbn':p.dist<40?'dbm':'dbf';const maps=`https://www.google.com/maps/search/${encodeURIComponent(p.name)}/@${p.lat},${p.lon},14z`;return`<div class="card"><div class="prow"><div class="pico">${wicons[i%wicons.length]}</div><div class="pbody"><div class="pname">${p.name}</div><div class="ptags"><span class="tag tb">Attraksjon</span><span class="db ${dc}">📍 ${p.dist.toFixed(1)} km</span></div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Kart</a><a class="bo" href="https://no.wikipedia.org/?curid=${p.pageid}" target="_blank">Wikipedia</a></div></div></div></div>`;}).join('')+`<div class="src">Wikipedia · Innen 100km fra ${city}</div>`;
+        return;
+      }catch(we){el.innerHTML='<div class="empty">Ingen severdigheter funnet i nærheten.</div>';return;}
+    }
     el.innerHTML=items.map(e=>{const t=gst(e.tags);const dc=e.dist<10?'dbn':e.dist<40?'dbm':'dbf';const maps=`https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`;const wiki=e.tags.wikipedia;return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${e.name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${e.dist.toFixed(1)} km</span>${e.tags.ele?`<span style="font-size:11px;color:var(--text2)">⬆️ ${e.tags.ele}m</span>`:''}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>${wiki?`<a class="bo" href="https://no.wikipedia.org/wiki/${encodeURIComponent(wiki.replace('no:',''))}" target="_blank">Wikipedia</a>`:''}</div></div></div></div>`;}).join('')+`<div class="src">OpenStreetMap · Innen 80km fra ${city}</div>`;
   }catch(e){el.innerHTML=`<div class="err">Kunne ikke laste severdigheter: ${e.message}</div>`;}
 }
