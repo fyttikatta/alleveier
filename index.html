@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0a0f1a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Alle Veier"/>
+  <meta name="description" content="Norway Road Trip — fuel prices, live weather, and sightseeing spots"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.svg"/>
+  <title>Alle Veier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0f1a;
+      --bg2: #111827;
+      --bg3: #1a2235;
+      --bg4: #232f47;
+      --text: #e8edf5;
+      --text2: #8a97b0;
+      --text3: #4a5568;
+      --accent: #4fa8e8;
+      --accent2: #2d7fc1;
+      --green: #4ade80;
+      --green2: #166534;
+      --amber: #fbbf24;
+      --amber2: #92400e;
+      --red: #f87171;
+      --red2: #991b1b;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    .app-header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,15,26,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: env(safe-area-inset-top, 0) 0 0;
+    }
+    .header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+    }
+    .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px; color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .logo span { color: var(--accent); }
+    .logo-sub { font-size: 11px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-weight: 300; margin-top: 1px; }
+
+    /* ── SEARCH ── */
+    .search-wrap {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .search-row {
+      display: flex; gap: 10px; align-items: center;
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 50px;
+      padding: 4px 4px 4px 18px;
+    }
+    .search-row input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 400;
+    }
+    .search-row input::placeholder { color: var(--text3); }
+    .search-btn {
+      background: var(--accent); border: none; border-radius: 50px;
+      color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500;
+      padding: 9px 20px; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .search-btn:active { transform: scale(0.96); background: var(--accent2); }
+
+    /* ── LOCATION BAR ── */
+    .loc-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px; color: var(--text2);
+    }
+    .loc-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .loc-bar b { color: var(--text); font-weight: 500; }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex; overflow-x: auto; gap: 0;
+      padding: 0 20px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex-shrink: 0; padding: 14px 20px;
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--text2); font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 400; cursor: pointer;
+      transition: color 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+    .tab-icon { font-size: 15px; }
+
+    /* ── SECTIONS ── */
+    .section { display: none; padding: 20px; }
+    .section.active { display: block; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--border2); }
+
+    /* ── FUEL ── */
+    .fuel-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .fuel-info { flex: 1; min-width: 0; }
+    .fuel-name { font-size: 15px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fuel-addr { font-size: 12px; color: var(--text2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fuel-prices { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
+    .price-chip { text-align: center; }
+    .price-chip-lbl { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; }
+    .price-chip-val { font-size: 17px; font-weight: 500; margin-top: 1px; }
+    .pc-g { color: var(--green); }
+    .pc-b { color: var(--accent); }
+    .price-chip-val sup { font-size: 11px; }
+    .dist-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 3px 9px; border-radius: 20px;
+      margin-top: 7px; font-weight: 500;
+    }
+    .db-near { background: rgba(74,222,128,0.1); color: var(--green); }
+    .db-mid { background: rgba(79,168,232,0.1); color: var(--accent); }
+    .db-far { background: rgba(251,191,36,0.1); color: var(--amber); }
+
+    /* ── WEATHER ── */
+    .wx-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .wx-icon { font-size: 56px; line-height: 1; }
+    .wx-temp { font-family: 'DM Serif Display', serif; font-size: 52px; color: var(--text); line-height: 1; }
+    .wx-city { font-size: 13px; color: var(--text2); margin-top: 4px; }
+    .wx-feels { font-size: 12px; color: var(--text3); margin-top: 2px; }
+    .wx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+    .wx-metric { background: var(--bg3); border-radius: var(--radius-sm); padding: 12px; }
+    .wx-m-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; }
+    .wx-m-val { font-size: 20px; font-weight: 500; color: var(--text); margin-top: 4px; }
+    .wx-m-unit { font-size: 11px; color: var(--text2); }
+    .wx-m-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .forecast-title { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+    .forecast-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .forecast-row::-webkit-scrollbar { display: none; }
+    .fc-item {
+      flex-shrink: 0; width: 68px; text-align: center;
+      background: var(--bg3); border-radius: var(--radius-sm); padding: 10px 6px;
+      border: 1px solid var(--border);
+    }
+    .fc-item.today { border-color: var(--accent); }
+    .fc-day { font-size: 11px; color: var(--text2); text-transform: capitalize; }
+    .fc-ico { font-size: 22px; margin: 5px 0; }
+    .fc-hi { font-size: 14px; font-weight: 500; color: var(--text); }
+    .fc-lo { font-size: 11px; color: var(--text3); }
+
+    /* ── SIGHTSEEING ── */
+    .sight-row { display: flex; gap: 14px; align-items: flex-start; }
+    .sight-ico {
+      width: 42px; height: 42px; flex-shrink: 0;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .sight-body { flex: 1; min-width: 0; }
+    .sight-title { font-size: 15px; font-weight: 500; color: var(--text); }
+    .sight-meta { font-size: 12px; color: var(--text2); margin-top: 3px; }
+    .sight-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .btn-primary {
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+      background: var(--accent); color: #fff; border: none;
+      padding: 6px 14px; border-radius: 20px; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:active { background: var(--accent2); transform: scale(0.96); }
+    .btn-outline {
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      background: none; color: var(--text2);
+      border: 1px solid var(--border2);
+      padding: 6px 14px; border-radius: 20px; cursor: pointer;
+      text-decoration: none; display: inline-block;
+      transition: border-color 0.2s;
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── STATES ── */
+    .loading-state {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 48px 20px; gap: 14px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-state p { font-size: 13px; color: var(--text2); }
+    .error-state {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: var(--radius); padding: 16px 18px;
+      font-size: 13px; color: var(--red);
+      margin-bottom: 12px; line-height: 1.6;
+    }
+    .info-state {
+      background: rgba(79,168,232,0.08);
+      border: 1px solid rgba(79,168,232,0.15);
+      border-radius: var(--radius); padding: 14px 16px;
+      font-size: 12px; color: var(--accent);
+      margin-bottom: 12px; line-height: 1.6;
+    }
+    .source-tag {
+      font-size: 11px; color: var(--text3);
+      margin-top: 4px; padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    }
+    .source-tag a { color: var(--accent); text-decoration: none; }
+
+    /* ── UV BADGE ── */
+    .uv-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+    .uv-low { background: rgba(74,222,128,0.12); color: var(--green); }
+    .uv-mid { background: rgba(251,191,36,0.12); color: var(--amber); }
+    .uv-high { background: rgba(248,113,113,0.12); color: var(--red); }
+
+    /* ── SECTION HEADER ── */
+    .sec-header { margin-bottom: 16px; }
+    .sec-header h2 { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
+    .sec-header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+    /* ── BOTTOM NAV (mobile) ── */
+    .bottom-nav {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(10,15,26,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 100;
+    }
+    .bnav-inner { display: flex; justify-content: space-around; }
+    .bnav-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: none; border: none; cursor: pointer;
+      padding: 6px 20px; color: var(--text3);
+      font-family: 'DM Sans', sans-serif; font-size: 10px;
+      transition: color 0.2s;
+    }
+    .bnav-btn.active { color: var(--accent); }
+    .bnav-icon { font-size: 20px; }
+
+    @media (max-width: 600px) {
+      .tabs { display: none; }
+      .bottom-nav { display: block; }
+      .section { padding-bottom: 90px; }
+      .wx-temp { font-size: 44px; }
+    }
+
+    /* ── ANIMATIONS ── */
+    .fade-in { animation: fadeIn 0.4s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .card { animation: fadeIn 0.35s ease both; }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div>
+      <div class="logo">Alle<span>Veier</span></div>
+      <div class="logo-sub">Din norske reisekompis</div>
+    </div>
+  </div>
+  <div class="search-wrap">
+    <div class="search-row">
+      <input id="cityInput" type="text" placeholder="By, sted eller region i Norge…" value="Oslo" autocomplete="off" spellcheck="false"/>
+      <button class="search-btn" onclick="handleSearch()">Søk</button>
+    </div>
+  </div>
+  <div id="locBar" class="loc-bar">
+    <div class="loc-dot"></div>
+    <span>Viser resultater for <b id="locName">Oslo</b></span>
+  </div>
+</header>
+
+<!-- Desktop tabs -->
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="fuel" onclick="switchTab('fuel', this)">
+    <span class="tab-icon">⛽</span> Drivstoffpriser
+  </button>
+  <button class="tab-btn" data-tab="weather" onclick="switchTab('weather', this)">
+    <span class="tab-icon">🌤</span> Vær
+  </button>
+  <button class="tab-btn" data-tab="sights" onclick="switchTab('sights', this)">
+    <span class="tab-icon">📍</span> Severdigheter
+  </button>
+</nav>
+
+<!-- Sections -->
+<main>
+  <section id="fuel" class="section active">
+    <div class="sec-header">
+      <h2>Drivstoffpriser</h2>
+      <p>Nærmeste stasjoner og priser</p>
+    </div>
+    <div id="fuelContent"><div class="loading-state"><div class="spinner"></div><p>Henter priser…</p></div></div>
+  </section>
+
+  <section id="weather" class="section">
+    <div class="sec-header">
+      <h2>Vær</h2>
+      <p>Sanntidsdata fra Yr.no</p>
+    </div>
+    <div id="weatherContent"><div class="loading-state"><div class="spinner"></div><p>Henter værmeldingen…</p></div></div>
+  </section>
+
+  <section id="sights" class="section">
+    <div class="sec-header">
+      <h2>Severdigheter</h2>
+      <p>Steder å besøke i nærheten</p>
+    </div>
+    <div id="sightsContent"><div class="loading-state"><div class="spinner"></div><p>Finner attraksjoner…</p></div></div>
+  </section>
+</main>
+
+<!-- Mobile bottom nav -->
+<nav class="bottom-nav">
+  <div class="bnav-inner">
+    <button class="bnav-btn active" data-tab="fuel" onclick="switchTab('fuel', this)">
+      <span class="bnav-icon">⛽</span> Drivstoff
+    </button>
+    <button class="bnav-btn" data-tab="weather" onclick="switchTab('weather', this)">
+      <span class="bnav-icon">🌤</span> Vær
+    </button>
+    <button class="bnav-btn" data-tab="sights" onclick="switchTab('sights', this)">
+      <span class="bnav-icon">📍</span> Steder
+    </button>
+  </div>
+</nav>
+
+<script>
+// ── TAB SWITCHING ──
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-btn, .bnav-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll(`[data-tab="${name}"]`).forEach(t => t.classList.add('active'));
+  document.getElementById(name).classList.add('active');
+}
+
+// ── HELPERS ──
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function windDir(deg) {
+  return ['N','NØ','Ø','SØ','S','SV','V','NV'][Math.round(deg/45)%8];
+}
+
+function weatherIcon(code) {
+  if (!code) return '🌡️';
+  if (code.includes('thunder')) return '⛈️';
+  if (code.includes('snow')) return '❄️';
+  if (code.includes('sleet')) return '🌨️';
+  if (code.includes('heavyrain')) return '🌧️';
+  if (code.includes('rain') || code.includes('shower')) return '🌦️';
+  if (code.includes('fog')) return '🌫️';
+  if (code.includes('partlycloudy') || (code.includes('cloudy') && code.includes('partly'))) return '⛅';
+  if (code.includes('cloudy')) return '☁️';
+  if (code.includes('fair')) return '🌤️';
+  if (code.includes('clear')) return '☀️';
+  return '🌡️';
+}
+
+function distBadge(d) {
+  if (d < 5) return `<span class="dist-badge db-near">📍 ${d.toFixed(1)} km</span>`;
+  if (d < 20) return `<span class="dist-badge db-mid">📍 ${d.toFixed(1)} km</span>`;
+  return `<span class="dist-badge db-far">📍 ${d.toFixed(1)} km</span>`;
+}
+
+// ── GEOCODE ──
+async function geocode(query) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' Norway')}&format=json&limit=1&accept-language=no`;
+  const r = await fetch(url, { headers: { 'Accept-Language': 'no' } });
+  const d = await r.json();
+  if (!d.length) throw new Error('Stedet ble ikke funnet');
+  return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] };
+}
+
+// ── FUEL ──
+const FALLBACK_STATIONS = [
+  { name: 'Circle K', addr: 'Landsdekkende', b95: 19.49, b98: 20.29, diesel: 19.19 },
+  { name: 'Uno-X', addr: 'Landsdekkende', b95: 19.39, b98: 20.19, diesel: 19.09 },
+  { name: 'Shell', addr: 'Landsdekkende', b95: 19.59, b98: 20.39, diesel: 19.29 },
+  { name: 'Esso', addr: 'Landsdekkende', b95: 19.45, b98: 20.25, diesel: 19.15 },
+  { name: 'St1', addr: 'Landsdekkende', b95: 19.42, b98: 20.22, diesel: 19.12 },
+  { name: 'Rema Drivstoff', addr: 'Landsdekkende', b95: 19.29, b98: null, diesel: 19.01 },
+];
+
+async function loadFuel(lat, lon, city) {
+  const el = document.getElementById('fuelContent');
+  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter drivstoffpriser…</p></div>';
+  let html = '';
+  let live = false;
+
+  try {
+    const apiUrl = 'https://drivstoffpriser.no/api/stations';
+    const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(apiUrl)}`);
+    if (!r.ok) throw new Error('API-feil');
+    const data = await r.json();
+
+    const nearby = data
+      .filter(s => s.lat && s.lon)
+      .map(s => ({ ...s, dist: haversine(lat, lon, parseFloat(s.lat), parseFloat(s.lon)) }))
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 15);
+
+    if (!nearby.length) throw new Error('Ingen stasjoner funnet');
+
+    html = nearby.map(s => {
+      const p = s.prices || {};
+      const prices = [
+        p.bensin95 ? `<div class="price-chip"><div class="price-chip-lbl">95</div><div class="price-chip-val pc-g">${parseFloat(p.bensin95).toFixed(2)}</div></div>` : '',
+        p.bensin98 ? `<div class="price-chip"><div class="price-chip-lbl">98</div><div class="price-chip-val pc-g">${parseFloat(p.bensin98).toFixed(2)}</div></div>` : '',
+        p.diesel ? `<div class="price-chip"><div class="price-chip-lbl">Diesel</div><div class="price-chip-val pc-b">${parseFloat(p.diesel).toFixed(2)}</div></div>` : '',
+      ].join('');
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+      return `<div class="card fade-in">
+        <div class="fuel-row">
+          <div class="fuel-info">
+            <div class="fuel-name">${s.name || 'Stasjon'}</div>
+            <div class="fuel-addr">${s.address || city}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px">
+              ${distBadge(s.dist)}
+              <a href="${mapsUrl}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Veibeskrivelse →</a>
+            </div>
+          </div>
+          <div class="fuel-prices">${prices || '<span style="font-size:12px;color:var(--text2)">Ingen priser</span>'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    live = true;
+  } catch (e) {
+    html = `<div class="info-state">⚠️ Kunne ikke hente live priser (${e.message}). Viser nasjonale snittprisoversikter. For live-priser: <a href="https://drivstoffpriser.no" target="_blank">drivstoffpriser.no</a></div>`
+      + FALLBACK_STATIONS.map(s => `<div class="card fade-in">
+        <div class="fuel-row">
+          <div class="fuel-info">
+            <div class="fuel-name">${s.name}</div>
+            <div class="fuel-addr">${s.addr}</div>
+            <span class="dist-badge db-mid">Landsgjennomsnitt</span>
+          </div>
+          <div class="fuel-prices">
+            ${s.b95 ? `<div class="price-chip"><div class="price-chip-lbl">95</div><div class="price-chip-val pc-g">${s.b95.toFixed(2)}</div></div>` : ''}
+            ${s.b98 ? `<div class="price-chip"><div class="price-chip-lbl">98</div><div class="price-chip-val pc-g">${s.b98.toFixed(2)}</div></div>` : ''}
+            <div class="price-chip"><div class="price-chip-lbl">Diesel</div><div class="price-chip-val pc-b">${s.diesel.toFixed(2)}</div></div>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  el.innerHTML = html + `<div class="source-tag">${live ? '🟢 Sanntidsdata · Sortert etter avstand fra ' + city : '⚪ Landsgjennomsnitt'} · NOK/liter · <a href="https://drivstoffpriser.no" target="_blank">drivstoffpriser.no</a></div>`;
+}
+
+// ── WEATHER ──
+async function loadWeather(lat, lon, city) {
+  const el = document.getElementById('weatherContent');
+  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter vær fra Yr.no…</p></div>';
+  try {
+    const metUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`;
+    const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(metUrl)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    const ts = data.properties.timeseries;
+    const now = ts[0];
+    const ins = now.data.instant.details;
+    const next = now.data.next_1_hours || now.data.next_6_hours;
+    const sym = next?.summary?.symbol_code || '';
+    const precip = next?.details?.precipitation_amount || 0;
+
+    const temp = Math.round(ins.air_temperature);
+    const wind = Math.round(ins.wind_speed);
+    const hum = Math.round(ins.relative_humidity);
+    const pres = Math.round(ins.air_pressure_at_sea_level);
+    const cloud = Math.round(ins.cloud_area_fraction);
+    const uv = Math.round(ins.ultraviolet_index_clear_sky || 0);
+    const feels = Math.round(temp - wind * 0.5);
+    const wdir = windDir(ins.wind_from_direction || 0);
+    const uvClass = uv < 3 ? 'uv-low' : uv < 6 ? 'uv-mid' : 'uv-high';
+    const uvLabel = uv < 3 ? 'Lav UV' : uv < 6 ? 'Moderat UV' : 'Høy UV';
+
+    // Build daily forecast
+    const daily = [];
+    const seen = new Set();
+    for (const t of ts) {
+      const date = t.time.split('T')[0];
+      if (!seen.has(date) && t.data.next_6_hours) {
+        seen.add(date);
+        const s = t.data.next_6_hours.summary.symbol_code;
+        const maxT = t.data.next_6_hours.details.air_temperature_max;
+        const minT = t.data.next_6_hours.details.air_temperature_min;
+        daily.push({
+          day: new Date(t.time).toLocaleDateString('nb-NO', { weekday: 'short' }),
+          icon: weatherIcon(s),
+          hi: Math.round(maxT || t.data.instant.details.air_temperature),
+          lo: Math.round(minT || t.data.instant.details.air_temperature - 3),
+          today: seen.size === 1
+        });
+        if (daily.length >= 7) break;
+      }
+    }
+
+    el.innerHTML = `
+      <div class="card fade-in">
+        <div class="wx-hero">
+          <span class="wx-icon">${weatherIcon(sym)}</span>
+          <div>
+            <div class="wx-temp">${temp}°</div>
+            <div class="wx-city">${city}</div>
+            <div class="wx-feels">Føles som ${feels}°C · <span class="uv-badge ${uvClass}">${uvLabel} ${uv}</span></div>
+          </div>
+        </div>
+        <div class="wx-grid">
+          <div class="wx-metric">
+            <div class="wx-m-label">Vind</div>
+            <div class="wx-m-val">${wind}<span class="wx-m-unit"> m/s</span></div>
+            <div class="wx-m-sub">${wdir}</div>
+          </div>
+          <div class="wx-metric">
+            <div class="wx-m-label">Luftfukt.</div>
+            <div class="wx-m-val">${hum}<span class="wx-m-unit">%</span></div>
+          </div>
+          <div class="wx-metric">
+            <div class="wx-m-label">Trykk</div>
+            <div class="wx-m-val">${pres}<span class="wx-m-unit"> hPa</span></div>
+          </div>
+          <div class="wx-metric">
+            <div class="wx-m-label">Nedbør</div>
+            <div class="wx-m-val">${precip.toFixed(1)}<span class="wx-m-unit"> mm</span></div>
+          </div>
+          <div class="wx-metric">
+            <div class="wx-m-label">Skydekke</div>
+            <div class="wx-m-val">${cloud}<span class="wx-m-unit">%</span></div>
+          </div>
+          <div class="wx-metric">
+            <div class="wx-m-label">UV-indeks</div>
+            <div class="wx-m-val">${uv}</div>
+          </div>
+        </div>
+        <div class="forecast-title">7-dagersvarsel</div>
+        <div class="forecast-row">
+          ${daily.map((d, i) => `<div class="fc-item${i===0?' today':''}">
+            <div class="fc-day">${i===0?'I dag':d.day}</div>
+            <div class="fc-ico">${d.icon}</div>
+            <div class="fc-hi">${d.hi}°</div>
+            <div class="fc-lo">${d.lo}°</div>
+          </div>`).join('')}
+        </div>
+        <div class="source-tag">🟢 Sanntidsdata · <a href="https://yr.no" target="_blank">yr.no</a> / api.met.no · Oppdateres hver time</div>
+      </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="error-state">Kunne ikke henteværdata: ${e.message}. Prøv <a href="https://yr.no" target="_blank">yr.no</a> direkte.</div>`;
+  }
+}
+
+// ── SIGHTSEEING ──
+const SIGHT_ICONS = ['🏔️','🏰','⛪','🏛️','🎨','🌊','🌲','🦌','🏞️','⛵','🗿','🎿','🌋','🏟️','🎭','🏗️'];
+
+async function loadSights(lat, lon, city) {
+  const el = document.getElementById('sightsContent');
+  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter attraksjoner…</p></div>';
+  try {
+    const r = await fetch(`https://no.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=50000&gslimit=16&format=json&origin=*`);
+    const data = await r.json();
+    const pages = data.query?.geosearch || [];
+    if (!pages.length) { el.innerHTML = '<div class="loading-state"><p>Ingen attraksjoner funnet i nærheten.</p></div>'; return; }
+
+    el.innerHTML = pages.map((p, i) => {
+      const dist = haversine(lat, lon, p.lat, p.lon);
+      const dbc = dist < 10 ? 'db-near' : dist < 30 ? 'db-mid' : 'db-far';
+      const icon = SIGHT_ICONS[i % SIGHT_ICONS.length];
+      return `<div class="card fade-in">
+        <div class="sight-row">
+          <div class="sight-ico">${icon}</div>
+          <div class="sight-body">
+            <div class="sight-title">${p.title}</div>
+            <div class="sight-meta"><span class="dist-badge ${dbc}">📍 ${dist.toFixed(1)} km fra ${city}</span></div>
+            <div class="sight-btns">
+              <button class="btn-primary" onclick="window.open('https://no.wikipedia.org/?curid=${p.pageid}','_blank')">Les mer</button>
+              <a class="btn-outline" href="https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${p.lat},${p.lon},14z" target="_blank">Kart</a>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('') + `<div class="source-tag">Wikipedia geosøk · Steder innen 50km fra ${city}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="error-state">Kunne ikke laste attraksjoner: ${e.message}</div>`;
+  }
+}
+
+// ── MAIN SEARCH ──
+async function handleSearch() {
+  const query = document.getElementById('cityInput').value.trim() || 'Oslo';
+  document.getElementById('locName').textContent = '…';
+  try {
+    const geo = await geocode(query);
+    document.getElementById('locName').textContent = geo.name;
+    loadFuel(geo.lat, geo.lon, geo.name);
+    loadWeather(geo.lat, geo.lon, geo.name);
+    loadSights(geo.lat, geo.lon, geo.name);
+  } catch (e) {
+    ['fuelContent', 'weatherContent', 'sightsContent'].forEach(id => {
+      document.getElementById(id).innerHTML = `<div class="error-state">${e.message}</div>`;
+    });
+  }
+}
+
+// Enter key support
+document.getElementById('cityInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSearch();
+});
+
+// Initial load
+handleSearch();
+</script>
+</body>
+</html>
