@@ -128,7 +128,7 @@
 <nav class="tabs">
   <button class="tab-btn active" data-tab="fuel"    onclick="sw('fuel',this)">⛽ Drivstoff</button>
   <button class="tab-btn"        data-tab="weather" onclick="sw('weather',this)">🌤 Vær</button>
-  <button class="tab-btn"        data-tab="sights"  onclick="sw('sights',this)">📍 Severdigheter</button>
+  <button class="tab-btn"        data-tab="sights"  onclick="sw('sights',this)">🥾 Fjellturer</button>
   <button class="tab-btn"        data-tab="stay"    onclick="sw('stay',this)">🏨 Overnatting</button>
   <button class="tab-btn"        data-tab="food"    onclick="sw('food',this)">🍔 Spis & Drikk</button>
 </nav>
@@ -143,7 +143,7 @@
     <div id="weatherContent"><div class="loading-state"><div class="spinner"></div><p>Henter vær…</p></div></div>
   </section>
   <section id="sights" class="section">
-    <div class="sec-header"><h2>Severdigheter</h2><p>Utsiktspunkter, fyr, fosser og mer</p></div>
+    <div class="sec-header"><h2>Fjellturer</h2><p>Topper, stier og DNT-hytter i nærheten</p></div>
     <div id="sightsContent"><div class="loading-state"><div class="spinner"></div><p>Leter etter attraksjoner…</p></div></div>
   </section>
   <section id="stay" class="section">
@@ -160,7 +160,7 @@
   <div class="bnav-inner">
     <button class="bnav-btn active" data-tab="fuel"    onclick="sw('fuel',this)"><span class="bnav-icon">⛽</span>Drivstoff</button>
     <button class="bnav-btn"        data-tab="weather" onclick="sw('weather',this)"><span class="bnav-icon">🌤</span>Vær</button>
-    <button class="bnav-btn"        data-tab="sights"  onclick="sw('sights',this)"><span class="bnav-icon">📍</span>Steder</button>
+    <button class="bnav-btn"        data-tab="sights"  onclick="sw('sights',this)"><span class="bnav-icon">🥾</span>Turer</button>
     <button class="bnav-btn"        data-tab="stay"    onclick="sw('stay',this)"><span class="bnav-icon">🏨</span>Sov</button>
     <button class="bnav-btn"        data-tab="food"    onclick="sw('food',this)"><span class="bnav-icon">🍔</span>Mat</button>
   </div>
@@ -223,14 +223,13 @@ async function loadWeather(lat,lon,city){
   const el=document.getElementById('weatherContent');
   el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter vær…</p></div>';
   try{
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,cloud_cover,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,cloud_cover&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
     const r=await fetch(url);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
     const c=d.current,cu=d.current_units,daily=d.daily;
-    const temp=Math.round(c.temperature_2m),wind=Math.round(c.wind_speed_10m),hum=Math.round(c.relative_humidity_2m),pres=Math.round(c.surface_pressure),cloud=Math.round(c.cloud_cover),uv=Math.round(c.uv_index||0),precip=c.precipitation||0;
+    const temp=Math.round(c.temperature_2m),wind=Math.round(c.wind_speed_10m),hum=Math.round(c.relative_humidity_2m),pres=Math.round(c.surface_pressure),cloud=Math.round(c.cloud_cover),precip=c.precipitation||0;
     const feels=Math.round(temp-wind*0.3);
-    const uvC=uv<3?'uv-low':uv<6?'uv-mid':'uv-high',uvL=uv<3?'Lav UV':uv<6?'Moderat UV':'Høy UV';
     const icon=omIcon(c.weather_code);
     const days=daily.time.map((t,i)=>({
       day:new Date(t).toLocaleDateString('nb-NO',{weekday:'short'}),
@@ -238,34 +237,43 @@ async function loadWeather(lat,lon,city){
       hi:Math.round(daily.temperature_2m_max[i]),
       lo:Math.round(daily.temperature_2m_min[i])
     }));
-    el.innerHTML=`<div class="card"><div class="wx-hero"><span class="wx-icon">${icon}</span><div><div class="wx-temp">${temp}°</div><div class="wx-city">${city}</div><div class="wx-feels">Føles som ${feels}°C · <span class="${uvC}">${uvL} ${uv}</span></div></div></div><div class="wx-grid"><div class="wx-m"><div class="wx-ml">Vind</div><div class="wx-mv">${wind}<span class="wx-mu"> m/s</span></div><div class="wx-ms">${wDir(c.wind_direction_10m||0)}</div></div><div class="wx-m"><div class="wx-ml">Luftfukt.</div><div class="wx-mv">${hum}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">Trykk</div><div class="wx-mv">${pres}<span class="wx-mu"> hPa</span></div></div><div class="wx-m"><div class="wx-ml">Nedbør</div><div class="wx-mv">${precip.toFixed(1)}<span class="wx-mu"> mm</span></div></div><div class="wx-m"><div class="wx-ml">Skydekke</div><div class="wx-mv">${cloud}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">UV-indeks</div><div class="wx-mv">${uv}</div></div></div><div class="fc-lbl">7-dagersvarsel</div><div class="fc-row">${days.map((d,i)=>`<div class="fc-item${i===0?' today':''}"><div class="fc-day">${i===0?'I dag':d.day}</div><div class="fc-ico">${d.icon}</div><div class="fc-hi">${d.hi}°</div><div class="fc-lo">${d.lo}°</div></div>`).join('')}</div><div class="src" style="margin-top:12px">🟢 Sanntidsdata · open-meteo.com · Oppdateres hver time</div></div>`;
+    el.innerHTML=`<div class="card"><div class="wx-hero"><span class="wx-icon">${icon}</span><div><div class="wx-temp">${temp}°</div><div class="wx-city">${city}</div><div class="wx-feels">Føles som ${feels}°C</div></div></div><div class="wx-grid"><div class="wx-m"><div class="wx-ml">Vind</div><div class="wx-mv">${wind}<span class="wx-mu"> m/s</span></div><div class="wx-ms">${wDir(c.wind_direction_10m||0)}</div></div><div class="wx-m"><div class="wx-ml">Luftfukt.</div><div class="wx-mv">${hum}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">Trykk</div><div class="wx-mv">${pres}<span class="wx-mu"> hPa</span></div></div><div class="wx-m"><div class="wx-ml">Nedbør</div><div class="wx-mv">${precip.toFixed(1)}<span class="wx-mu"> mm</span></div></div><div class="wx-m"><div class="wx-ml">Skydekke</div><div class="wx-mv">${cloud}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">Vind retning</div><div class="wx-mv" style="font-size:15px">${wDir(c.wind_direction_10m||0)}</div></div></div><div class="fc-lbl">7-dagersvarsel</div><div class="fc-row">${days.map((d,i)=>`<div class="fc-item${i===0?' today':''}"><div class="fc-day">${i===0?'I dag':d.day}</div><div class="fc-ico">${d.icon}</div><div class="fc-hi">${d.hi}°</div><div class="fc-lo">${d.lo}°</div></div>`).join('')}</div><div class="src" style="margin-top:12px">🟢 Sanntidsdata · open-meteo.com · Oppdateres hver time</div></div>`;
   }catch(e){el.innerHTML=`<div class="err">Kunne ikke hente vær: ${e.message}</div>`;}
 }
 
-// SEVERDIGHETER
-const ST={viewpoint:{i:'🏔️',l:'Utsiktspunkt'},museum:{i:'🏛️',l:'Museum'},attraction:{i:'⭐',l:'Attraksjon'},castle:{i:'🏰',l:'Borg'},ruins:{i:'🗿',l:'Ruiner'},monument:{i:'🪨',l:'Monument'},memorial:{i:'🕊️',l:'Minnesmerke'},peak:{i:'⛰️',l:'Fjelltopp'},waterfall:{i:'💧',l:'Foss'},beach:{i:'🏖️',l:'Strand'},lighthouse:{i:'🗼',l:'Fyr'},cave_entrance:{i:'🕳️',l:'Grotte'}};
-function gst(t){if(t.man_made==='lighthouse')return ST.lighthouse;if(t.natural==='peak')return ST.peak;if(t.natural==='waterfall')return ST.waterfall;if(t.natural==='beach')return ST.beach;if(t.natural==='cave_entrance')return ST.cave_entrance;if(t.historic==='castle')return ST.castle;if(t.historic==='ruins')return ST.ruins;if(t.historic==='monument')return ST.monument;if(t.historic==='memorial')return ST.memorial;if(t.tourism==='viewpoint')return ST.viewpoint;if(t.tourism==='museum')return ST.museum;return ST.attraction;}
+// FJELLTURER
+const HT={peak:{i:'⛰️',l:'Fjelltopp'},trailhead:{i:'🥾',l:'Turstartpunkt'},alpine_hut:{i:'🏕️',l:'DNT-hytte'},wilderness_hut:{i:'🪵',l:'Utmarkshytte'},saddle:{i:'🗻',l:'Fjellpass'},viewpoint:{i:'🔭',l:'Utsiktspunkt'}};
+function ght(t){if(t.natural==='peak')return HT.peak;if(t.natural==='saddle')return HT.saddle;if(t.highway==='trailhead')return HT.trailhead;if(t.tourism==='alpine_hut'||t.amenity==='shelter')return HT.alpine_hut;if(t.tourism==='wilderness_hut')return HT.wilderness_hut;if(t.tourism==='viewpoint')return HT.viewpoint;return HT.trailhead;}
 async function loadSights(lat,lon,city){
   const el=document.getElementById('sightsContent');
-  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Leter etter severdigheter…</p></div>';
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Leter etter turer og topper…</p></div>';
   try{
-    const R=80000,q=`[out:json][timeout:25];(node["tourism"~"viewpoint|museum|attraction"](around:${R},${lat},${lon});node["historic"~"castle|ruins|monument|memorial"](around:${R},${lat},${lon});node["natural"~"waterfall|beach|cave_entrance"](around:${R},${lat},${lon});node["man_made"="lighthouse"](around:${R},${lat},${lon});node["natural"="peak"]["ele"](around:${R},${lat},${lon}););out 40;`;
+    const R=80000;
+    const q=`[out:json][timeout:25];(node["natural"="peak"](around:${R},${lat},${lon});node["natural"="saddle"](around:${R},${lat},${lon});node["highway"="trailhead"](around:${R},${lat},${lon});node["tourism"~"alpine_hut|wilderness_hut|viewpoint"](around:${R},${lat},${lon});node["amenity"="shelter"]["shelter_type"="basic_hut"](around:${R},${lat},${lon}););out 50;`;
     const data=await ovp(q);
-    let items=(data.elements||[]).filter(e=>e.tags&&(e.tags['name:no']||e.tags.name)).filter(e=>e.tags&&(e.tags['name:no']||e.tags.name)).map(e=>({...e,name:e.tags['name:no']||e.tags.name,dist:hav(lat,lon,e.lat,e.lon)})).filter(e=>e.lat&&e.lon).sort((a,b)=>a.dist-b.dist).slice(0,20);
+    let items=(data.elements||[])
+      .filter(e=>e.tags&&(e.tags['name:no']||e.tags.name))
+      .map(e=>({...e,name:e.tags['name:no']||e.tags.name,dist:hav(lat,lon,e.lat,e.lon)}))
+      .filter(e=>e.lat&&e.lon)
+      .sort((a,b)=>a.dist-b.dist)
+      .slice(0,25);
     if(!items.length){
-      // Wikipedia fallback
-      try{
-        const wr=await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=100000&gslimit=20&format=json&origin=*`);
-        const wd=await wr.json();
-        const wp=(wd.query?.geosearch||[]).map(p=>({name:p.title,dist:hav(lat,lon,p.lat,p.lon),lat:p.lat,lon:p.lon,pageid:p.pageid,wiki:true})).sort((a,b)=>a.dist-b.dist);
-        if(!wp.length){el.innerHTML='<div class="empty">Ingen severdigheter funnet i nærheten.</div>';return;}
-        const wicons=['🏔️','🏰','⛪','🏛️','🎨','🌊','🌲','🦌','🏞️','⛵','🗿','🎿','🌋'];
-        el.innerHTML=wp.map((p,i)=>{const dc=p.dist<10?'dbn':p.dist<40?'dbm':'dbf';const maps=`https://www.google.com/maps/search/${encodeURIComponent(p.name)}/@${p.lat},${p.lon},14z`;return`<div class="card"><div class="prow"><div class="pico">${wicons[i%wicons.length]}</div><div class="pbody"><div class="pname">${p.name}</div><div class="ptags"><span class="tag tb">Attraksjon</span><span class="db ${dc}">📍 ${p.dist.toFixed(1)} km</span></div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Kart</a><a class="bo" href="https://no.wikipedia.org/?curid=${p.pageid}" target="_blank">Wikipedia</a></div></div></div></div>`;}).join('')+`<div class="src">Wikipedia · Innen 100km fra ${city}</div>`;
-        return;
-      }catch(we){el.innerHTML='<div class="empty">Ingen severdigheter funnet i nærheten.</div>';return;}
+      el.innerHTML='<div class="empty">Ingen turer funnet. Sjekk <a href="https://ut.no" target="_blank" style="color:var(--accent)">ut.no</a> for turer i nærheten.</div>';
+      return;
     }
-    el.innerHTML=items.map(e=>{const t=gst(e.tags);const dc=e.dist<10?'dbn':e.dist<40?'dbm':'dbf';const maps=`https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`;const wiki=e.tags.wikipedia;return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${e.name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${e.dist.toFixed(1)} km</span>${e.tags.ele?`<span style="font-size:11px;color:var(--text2)">⬆️ ${e.tags.ele}m</span>`:''}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>${wiki?`<a class="bo" href="https://no.wikipedia.org/wiki/${encodeURIComponent(wiki.replace('no:',''))}" target="_blank">Wikipedia</a>`:''}</div></div></div></div>`;}).join('')+`<div class="src">OpenStreetMap · Innen 80km fra ${city}</div>`;
-  }catch(e){el.innerHTML=`<div class="err">Kunne ikke laste severdigheter: ${e.message}</div>`;}
+    el.innerHTML=items.map(e=>{
+      const t=ght(e.tags);
+      const dc=e.dist<10?'dbn':e.dist<40?'dbm':'dbf';
+      const maps=`https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`;
+      const ut=`https://ut.no/kart#14/${e.lat}/${e.lon}`;
+      const ele=e.tags.ele?`<span style="font-size:11px;color:var(--text2)">⬆️ ${e.tags.ele}m</span>`:'';
+      const diff=e.tags.sac_scale?`<span class="tag tg">${e.tags.sac_scale.replace(/_/g,' ')}</span>`:'';
+      const wiki=e.tags.wikipedia;
+      return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${e.name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${e.dist.toFixed(1)} km</span>${ele}${diff}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a><a class="bo" href="${ut}" target="_blank">ut.no</a>${wiki?`<a class="bo" href="https://no.wikipedia.org/wiki/${encodeURIComponent(wiki.replace('no:',''))}" target="_blank">Wiki</a>`:''}</div></div></div></div>`;
+    }).join('')+`<div class="src">OpenStreetMap · Turer innen 80km fra ${city} · <a href="https://ut.no" target="_blank">Flere turer: ut.no</a></div>`;
+  }catch(e){
+    el.innerHTML=`<div class="err">Kunne ikke laste turer: ${e.message}</div>`;
+  }
 }
 
 // OVERNATTING
