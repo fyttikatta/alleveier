@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Alle Veier"/>
-  <meta name="description" content="Norway Road Trip — fuel prices, live weather, and sightseeing spots"/>
+  <meta name="description" content="Drivstoffpriser, vær, severdigheter, overnatting og mat i Norge"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
   <title>Alle Veier</title>
@@ -15,926 +15,283 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
-    :root {
-      --bg: #0a0f1a;
-      --bg2: #111827;
-      --bg3: #1a2235;
-      --bg4: #232f47;
-      --text: #e8edf5;
-      --text2: #8a97b0;
-      --text3: #4a5568;
-      --accent: #4fa8e8;
-      --accent2: #2d7fc1;
-      --green: #4ade80;
-      --green2: #166534;
-      --amber: #fbbf24;
-      --amber2: #92400e;
-      --red: #f87171;
-      --red2: #991b1b;
-      --border: rgba(255,255,255,0.07);
-      --border2: rgba(255,255,255,0.12);
-      --radius: 14px;
-      --radius-sm: 8px;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-      overflow-x: hidden;
-    }
-
-    /* ── HEADER ── */
-    .app-header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(10,15,26,0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: env(safe-area-inset-top, 0) 0 0;
-    }
-    .header-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 20px;
-    }
-    .logo {
-      font-family: 'DM Serif Display', serif;
-      font-size: 22px; color: var(--text);
-      letter-spacing: -0.3px;
-    }
-    .logo span { color: var(--accent); }
-    .logo-sub { font-size: 11px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-weight: 300; margin-top: 1px; }
-
-    /* ── SEARCH ── */
-    .search-wrap {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-    }
-    .search-row {
-      display: flex; gap: 10px; align-items: center;
-      background: var(--bg3);
-      border: 1px solid var(--border2);
-      border-radius: 50px;
-      padding: 4px 4px 4px 18px;
-    }
-    .search-row input {
-      flex: 1; background: none; border: none; outline: none;
-      color: var(--text); font-family: 'DM Sans', sans-serif;
-      font-size: 15px; font-weight: 400;
-    }
-    .search-row input::placeholder { color: var(--text3); }
-    .search-btn {
-      background: var(--accent); border: none; border-radius: 50px;
-      color: #fff; font-family: 'DM Sans', sans-serif;
-      font-size: 14px; font-weight: 500;
-      padding: 9px 20px; cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      white-space: nowrap;
-    }
-    .search-btn:active { transform: scale(0.96); background: var(--accent2); }
-
-    /* ── LOCATION BAR ── */
-    .loc-bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 20px;
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      font-size: 12px; color: var(--text2);
-    }
-    .loc-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--green); flex-shrink: 0;
-      box-shadow: 0 0 6px var(--green);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .loc-bar b { color: var(--text); font-weight: 500; }
-
-    /* ── TABS ── */
-    .tabs {
-      display: flex; overflow-x: auto; gap: 0;
-      padding: 0 20px;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      scrollbar-width: none;
-    }
-    .tabs::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      flex-shrink: 0; padding: 14px 20px;
-      background: none; border: none; border-bottom: 2px solid transparent;
-      color: var(--text2); font-family: 'DM Sans', sans-serif;
-      font-size: 14px; font-weight: 400; cursor: pointer;
-      transition: color 0.2s;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
-    .tab-icon { font-size: 15px; }
-
-    /* ── SECTIONS ── */
-    .section { display: none; padding: 20px; }
-    .section.active { display: block; }
-
-    /* ── CARDS ── */
-    .card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      margin-bottom: 12px;
-      transition: border-color 0.2s;
-    }
-    .card:hover { border-color: var(--border2); }
-
-    /* ── FUEL ── */
-    .fuel-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .fuel-info { flex: 1; min-width: 0; }
-    .fuel-name { font-size: 15px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fuel-addr { font-size: 12px; color: var(--text2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fuel-prices { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
-    .price-chip { text-align: center; }
-    .price-chip-lbl { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; }
-    .price-chip-val { font-size: 17px; font-weight: 500; margin-top: 1px; }
-    .pc-g { color: var(--green); }
-    .pc-b { color: var(--accent); }
-    .price-chip-val sup { font-size: 11px; }
-    .dist-badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 11px; padding: 3px 9px; border-radius: 20px;
-      margin-top: 7px; font-weight: 500;
-    }
-    .db-near { background: rgba(74,222,128,0.1); color: var(--green); }
-    .db-mid { background: rgba(79,168,232,0.1); color: var(--accent); }
-    .db-far { background: rgba(251,191,36,0.1); color: var(--amber); }
-
-    /* ── WEATHER ── */
-    .wx-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-    .wx-icon { font-size: 56px; line-height: 1; }
-    .wx-temp { font-family: 'DM Serif Display', serif; font-size: 52px; color: var(--text); line-height: 1; }
-    .wx-city { font-size: 13px; color: var(--text2); margin-top: 4px; }
-    .wx-feels { font-size: 12px; color: var(--text3); margin-top: 2px; }
-    .wx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
-    .wx-metric { background: var(--bg3); border-radius: var(--radius-sm); padding: 12px; }
-    .wx-m-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; }
-    .wx-m-val { font-size: 20px; font-weight: 500; color: var(--text); margin-top: 4px; }
-    .wx-m-unit { font-size: 11px; color: var(--text2); }
-    .wx-m-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
-    .forecast-title { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
-    .forecast-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
-    .forecast-row::-webkit-scrollbar { display: none; }
-    .fc-item {
-      flex-shrink: 0; width: 68px; text-align: center;
-      background: var(--bg3); border-radius: var(--radius-sm); padding: 10px 6px;
-      border: 1px solid var(--border);
-    }
-    .fc-item.today { border-color: var(--accent); }
-    .fc-day { font-size: 11px; color: var(--text2); text-transform: capitalize; }
-    .fc-ico { font-size: 22px; margin: 5px 0; }
-    .fc-hi { font-size: 14px; font-weight: 500; color: var(--text); }
-    .fc-lo { font-size: 11px; color: var(--text3); }
-
-    /* ── SIGHTSEEING ── */
-    .sight-row { display: flex; gap: 14px; align-items: flex-start; }
-    .sight-ico {
-      width: 42px; height: 42px; flex-shrink: 0;
-      background: var(--bg3); border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-    }
-    .sight-body { flex: 1; min-width: 0; }
-    .sight-title { font-size: 15px; font-weight: 500; color: var(--text); }
-    .sight-meta { font-size: 12px; color: var(--text2); margin-top: 3px; }
-    .sight-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-    .btn-primary {
-      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
-      background: var(--accent); color: #fff; border: none;
-      padding: 6px 14px; border-radius: 20px; cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-    }
-    .btn-primary:active { background: var(--accent2); transform: scale(0.96); }
-    .btn-outline {
-      font-family: 'DM Sans', sans-serif; font-size: 12px;
-      background: none; color: var(--text2);
-      border: 1px solid var(--border2);
-      padding: 6px 14px; border-radius: 20px; cursor: pointer;
-      text-decoration: none; display: inline-block;
-      transition: border-color 0.2s;
-    }
-    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* ── STATES ── */
-    .loading-state {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 48px 20px; gap: 14px;
-    }
-    .spinner {
-      width: 32px; height: 32px;
-      border: 2px solid var(--border2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-state p { font-size: 13px; color: var(--text2); }
-    .error-state {
-      background: rgba(248,113,113,0.08);
-      border: 1px solid rgba(248,113,113,0.2);
-      border-radius: var(--radius); padding: 16px 18px;
-      font-size: 13px; color: var(--red);
-      margin-bottom: 12px; line-height: 1.6;
-    }
-    .info-state {
-      background: rgba(79,168,232,0.08);
-      border: 1px solid rgba(79,168,232,0.15);
-      border-radius: var(--radius); padding: 14px 16px;
-      font-size: 12px; color: var(--accent);
-      margin-bottom: 12px; line-height: 1.6;
-    }
-    .source-tag {
-      font-size: 11px; color: var(--text3);
-      margin-top: 4px; padding-top: 14px;
-      border-top: 1px solid var(--border);
-      display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
-    }
-    .source-tag a { color: var(--accent); text-decoration: none; }
-
-    /* ── UV BADGE ── */
-    .uv-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
-    .uv-low { background: rgba(74,222,128,0.12); color: var(--green); }
-    .uv-mid { background: rgba(251,191,36,0.12); color: var(--amber); }
-    .uv-high { background: rgba(248,113,113,0.12); color: var(--red); }
-
-    /* ── SECTION HEADER ── */
-    .sec-header { margin-bottom: 16px; }
-    .sec-header h2 { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); }
-    .sec-header p { font-size: 13px; color: var(--text2); margin-top: 4px; }
-
-    /* ── BOTTOM NAV (mobile) ── */
-    .bottom-nav {
-      display: none;
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: rgba(10,15,26,0.92);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border);
-      padding: 8px 0 env(safe-area-inset-bottom, 8px);
-      z-index: 100;
-    }
-    .bnav-inner { display: flex; justify-content: space-around; }
-    .bnav-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      background: none; border: none; cursor: pointer;
-      padding: 6px 20px; color: var(--text3);
-      font-family: 'DM Sans', sans-serif; font-size: 10px;
-      transition: color 0.2s;
-    }
-    .bnav-btn.active { color: var(--accent); }
-    .bnav-icon { font-size: 20px; }
-
-    @media (max-width: 600px) {
-      .tabs { display: none; }
-      .bottom-nav { display: block; }
-      .section { padding-bottom: 90px; }
-      .wx-temp { font-size: 44px; }
-    }
-
-    /* ── ANIMATIONS ── */
-    .fade-in { animation: fadeIn 0.4s ease both; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .card { animation: fadeIn 0.35s ease both; }
+    :root{--bg:#0a0f1a;--bg2:#111827;--bg3:#1a2235;--text:#e8edf5;--text2:#8a97b0;--text3:#4a5568;--accent:#4fa8e8;--accent2:#2d7fc1;--green:#4ade80;--amber:#fbbf24;--red:#f87171;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--r:14px;--rs:8px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    .app-header{position:sticky;top:0;z-index:100;background:rgba(10,15,26,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:env(safe-area-inset-top,0) 0 0}
+    .header-inner{padding:14px 20px}
+    .logo{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text)}
+    .logo span{color:var(--accent)}
+    .logo-sub{font-size:11px;color:var(--text2);font-weight:300;margin-top:1px}
+    .search-wrap{padding:12px 20px;border-bottom:1px solid var(--border)}
+    .search-row{display:flex;gap:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:50px;padding:4px 4px 4px 18px}
+    .search-row input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px}
+    .search-row input::placeholder{color:var(--text3)}
+    .search-btn{background:var(--accent);border:none;border-radius:50px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;padding:9px 20px;cursor:pointer}
+    .loc-bar{display:flex;align-items:center;gap:8px;padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+    .loc-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    .loc-bar b{color:var(--text);font-weight:500}
+    .tabs{display:flex;overflow-x:auto;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--border);scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab-btn{flex-shrink:0;padding:12px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-bottom:-1px}
+    .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+    .section{display:none;padding:20px;padding-bottom:100px}
+    .section.active{display:block}
+    .sec-header{margin-bottom:16px}
+    .sec-header h2{font-family:'DM Serif Display',serif;font-size:22px}
+    .sec-header p{font-size:13px;color:var(--text2);margin-top:4px}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;animation:fi 0.3s ease both}
+    @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .fuel-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+    .fuel-info{flex:1;min-width:0}
+    .fname{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .faddr{font-size:12px;color:var(--text2);margin-top:2px}
+    .fprices{display:flex;gap:10px;flex-shrink:0}
+    .pc{text-align:center}
+    .pclbl{font-size:10px;color:var(--text2);text-transform:uppercase}
+    .pcval{font-size:17px;font-weight:500;margin-top:1px}
+    .pcg{color:var(--green)}.pcb{color:var(--accent)}
+    .wx-hero{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+    .wx-icon{font-size:52px;line-height:1}
+    .wx-temp{font-family:'DM Serif Display',serif;font-size:52px;line-height:1}
+    .wx-city{font-size:13px;color:var(--text2);margin-top:4px}
+    .wx-feels{font-size:12px;color:var(--text3);margin-top:2px}
+    .wx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+    .wx-m{background:var(--bg3);border-radius:var(--rs);padding:10px}
+    .wx-ml{font-size:11px;color:var(--text2);text-transform:uppercase}
+    .wx-mv{font-size:19px;font-weight:500;margin-top:3px}
+    .wx-mu{font-size:11px;color:var(--text2)}
+    .wx-ms{font-size:11px;color:var(--text3);margin-top:1px}
+    .fc-lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+    .fc-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+    .fc-row::-webkit-scrollbar{display:none}
+    .fc-item{flex-shrink:0;width:64px;text-align:center;background:var(--bg3);border-radius:var(--rs);padding:8px 4px;border:1px solid var(--border)}
+    .fc-item.today{border-color:var(--accent)}
+    .fc-day{font-size:10px;color:var(--text2)}
+    .fc-ico{font-size:20px;margin:4px 0}
+    .fc-hi{font-size:13px;font-weight:500}
+    .fc-lo{font-size:10px;color:var(--text3)}
+    .prow{display:flex;gap:12px;align-items:flex-start}
+    .pico{width:42px;height:42px;flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:20px}
+    .pbody{flex:1;min-width:0}
+    .pname{font-size:15px;font-weight:500}
+    .ptags{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:5px}
+    .tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+    .tb{background:rgba(79,168,232,0.1);color:var(--accent)}
+    .tg{background:rgba(74,222,128,0.1);color:var(--green)}
+    .db{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+    .dbn{background:rgba(74,222,128,0.1);color:var(--green)}
+    .dbm{background:rgba(79,168,232,0.1);color:var(--accent)}
+    .dbf{background:rgba(251,191,36,0.1);color:var(--amber)}
+    .psub{font-size:11px;color:var(--text2);margin-top:3px}
+    .pbtns{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+    .bp{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:20px;cursor:pointer;text-decoration:none;display:inline-block}
+    .bo{font-family:'DM Sans',sans-serif;font-size:12px;background:none;color:var(--text2);border:1px solid var(--border2);padding:6px 14px;border-radius:20px;text-decoration:none;display:inline-block}
+    .uv-low{background:rgba(74,222,128,0.12);color:var(--green);font-size:11px;padding:2px 8px;border-radius:20px;display:inline-block}
+    .uv-mid{background:rgba(251,191,36,0.12);color:var(--amber);font-size:11px;padding:2px 8px;border-radius:20px;display:inline-block}
+    .uv-high{background:rgba(248,113,113,0.12);color:var(--red);font-size:11px;padding:2px 8px;border-radius:20px;display:inline-block}
+    .loading-state{display:flex;flex-direction:column;align-items:center;padding:48px 20px;gap:14px}
+    .spinner{width:30px;height:30px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-state p,.empty{font-size:13px;color:var(--text2);text-align:center;padding:32px 0}
+    .err{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--red);margin-bottom:10px;line-height:1.6}
+    .info{background:rgba(79,168,232,0.08);border:1px solid rgba(79,168,232,0.15);border-radius:var(--r);padding:12px 16px;font-size:12px;color:var(--accent);margin-bottom:10px;line-height:1.6}
+    .src{font-size:11px;color:var(--text3);margin-top:4px;padding-top:12px;border-top:1px solid var(--border)}
+    .src a{color:var(--accent);text-decoration:none}
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(10,15,26,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:6px 0 env(safe-area-inset-bottom,6px);z-index:100}
+    .bnav-inner{display:flex;justify-content:space-around}
+    .bnav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px 6px;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:9px;white-space:nowrap}
+    .bnav-btn.active{color:var(--accent)}
+    .bnav-icon{font-size:19px}
+    @media(max-width:600px){.tabs{display:none}.bottom-nav{display:block}}
   </style>
 </head>
 <body>
-
 <header class="app-header">
   <div class="header-inner">
-    <div>
-      <div class="logo">Alle<span>Veier</span></div>
-      <div class="logo-sub">Din norske reisekompis</div>
-    </div>
+    <div class="logo">Alle<span>Veier</span></div>
+    <div class="logo-sub">Din norske reisekompis</div>
   </div>
   <div class="search-wrap">
     <div class="search-row">
-      <input id="cityInput" type="text" placeholder="By, sted eller region i Norge…" value="Oslo" autocomplete="off" spellcheck="false"/>
+      <input id="cityInput" type="text" placeholder="By eller sted i Norge…" value="Oslo" autocomplete="off"/>
       <button class="search-btn" onclick="handleSearch()">Søk</button>
     </div>
   </div>
-  <div id="locBar" class="loc-bar">
+  <div class="loc-bar">
     <div class="loc-dot"></div>
     <span>Viser resultater for <b id="locName">Oslo</b></span>
   </div>
 </header>
 
-<!-- Desktop tabs -->
 <nav class="tabs">
-  <button class="tab-btn active" data-tab="fuel" onclick="switchTab('fuel', this)">
-    <span class="tab-icon">⛽</span> Drivstoffpriser
-  </button>
-  <button class="tab-btn" data-tab="weather" onclick="switchTab('weather', this)">
-    <span class="tab-icon">🌤</span> Vær
-  </button>
-  <button class="tab-btn" data-tab="sights" onclick="switchTab('sights', this)">
-    <span class="tab-icon">📍</span> Severdigheter
-  </button>
+  <button class="tab-btn active" data-tab="fuel"    onclick="sw('fuel',this)">⛽ Drivstoff</button>
+  <button class="tab-btn"        data-tab="weather" onclick="sw('weather',this)">🌤 Vær</button>
+  <button class="tab-btn"        data-tab="sights"  onclick="sw('sights',this)">📍 Severdigheter</button>
+  <button class="tab-btn"        data-tab="stay"    onclick="sw('stay',this)">🏨 Overnatting</button>
+  <button class="tab-btn"        data-tab="food"    onclick="sw('food',this)">🍔 Spis & Drikk</button>
 </nav>
 
-<!-- Sections -->
 <main>
   <section id="fuel" class="section active">
-    <div class="sec-header">
-      <h2>Drivstoffpriser</h2>
-      <p>Nærmeste stasjoner og priser</p>
-    </div>
-    <div id="fuelContent"><div class="loading-state"><div class="spinner"></div><p>Henter priser…</p></div></div>
+    <div class="sec-header"><h2>Drivstoffpriser</h2><p>Nærmeste stasjoner og priser</p></div>
+    <div id="fuelContent"><div class="loading-state"><div class="spinner"></div><p>Henter stasjoner…</p></div></div>
   </section>
-
   <section id="weather" class="section">
-    <div class="sec-header">
-      <h2>Vær</h2>
-      <p>Sanntidsdata fra Yr.no</p>
-    </div>
-    <div id="weatherContent"><div class="loading-state"><div class="spinner"></div><p>Henter værmeldingen…</p></div></div>
+    <div class="sec-header"><h2>Vær</h2><p>Sanntidsdata fra Yr.no</p></div>
+    <div id="weatherContent"><div class="loading-state"><div class="spinner"></div><p>Henter vær…</p></div></div>
   </section>
-
   <section id="sights" class="section">
-    <div class="sec-header">
-      <h2>Severdigheter</h2>
-      <p>Steder å besøke i nærheten</p>
-    </div>
-    <div id="sightsContent"><div class="loading-state"><div class="spinner"></div><p>Finner attraksjoner…</p></div></div>
+    <div class="sec-header"><h2>Severdigheter</h2><p>Utsiktspunkter, fyr, fosser og mer</p></div>
+    <div id="sightsContent"><div class="loading-state"><div class="spinner"></div><p>Leter etter attraksjoner…</p></div></div>
   </section>
-
   <section id="stay" class="section">
-    <div class="sec-header">
-      <h2>Overnatting</h2>
-      <p>Hotell, hytter og camping i nærheten</p>
-    </div>
+    <div class="sec-header"><h2>Overnatting</h2><p>Hotell, hytter og camping i nærheten</p></div>
     <div id="stayContent"><div class="loading-state"><div class="spinner"></div><p>Leter etter overnatting…</p></div></div>
   </section>
-
   <section id="food" class="section">
-    <div class="sec-header">
-      <h2>Spis & Drikk</h2>
-      <p>Fastfood, restauranter og kafeer i nærheten</p>
-    </div>
+    <div class="sec-header"><h2>Spis & Drikk</h2><p>Fastfood, restauranter og kafeer</p></div>
     <div id="foodContent"><div class="loading-state"><div class="spinner"></div><p>Leter etter spisesteder…</p></div></div>
   </section>
 </main>
 
-<!-- Mobile bottom nav -->
 <nav class="bottom-nav">
   <div class="bnav-inner">
-    <button class="bnav-btn active" data-tab="fuel" onclick="switchTab('fuel', this)">
-      <span class="bnav-icon">⛽</span> Drivstoff
-    </button>
-    <button class="bnav-btn" data-tab="weather" onclick="switchTab('weather', this)">
-      <span class="bnav-icon">🌤</span> Vær
-    </button>
-    <button class="bnav-btn" data-tab="sights" onclick="switchTab('sights', this)">
-      <span class="bnav-icon">📍</span> Steder
-    </button>
-    <button class="bnav-btn" data-tab="stay" onclick="switchTab('stay', this)">
-      <span class="bnav-icon">🏨</span> Sov
-    </button>
-    <button class="bnav-btn" data-tab="food" onclick="switchTab('food', this)">
-      <span class="bnav-icon">🍔</span> Mat
-    </button>
+    <button class="bnav-btn active" data-tab="fuel"    onclick="sw('fuel',this)"><span class="bnav-icon">⛽</span>Drivstoff</button>
+    <button class="bnav-btn"        data-tab="weather" onclick="sw('weather',this)"><span class="bnav-icon">🌤</span>Vær</button>
+    <button class="bnav-btn"        data-tab="sights"  onclick="sw('sights',this)"><span class="bnav-icon">📍</span>Steder</button>
+    <button class="bnav-btn"        data-tab="stay"    onclick="sw('stay',this)"><span class="bnav-icon">🏨</span>Sov</button>
+    <button class="bnav-btn"        data-tab="food"    onclick="sw('food',this)"><span class="bnav-icon">🍔</span>Mat</button>
   </div>
 </nav>
 
 <script>
-// ── TAB SWITCHING ──
-function switchTab(name, el) {
-  document.querySelectorAll('.tab-btn, .bnav-btn').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll(`[data-tab="${name}"]`).forEach(t => t.classList.add('active'));
+function sw(name,el){
+  document.querySelectorAll('.tab-btn,.bnav-btn').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('[data-tab="'+name+'"]').forEach(t=>t.classList.add('active'));
   document.getElementById(name).classList.add('active');
 }
-
-// ── HELPERS ──
-function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+function hav(a,b,c,d){const R=6371,dL=(c-a)*Math.PI/180,dO=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dO/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function dbadge(d){const c=d<5?'dbn':d<20?'dbm':'dbf';return`<span class="db ${c}">📍 ${d.toFixed(1)} km</span>`;}
+function wIcon(c){if(!c)return'🌡️';if(c.includes('thunder'))return'⛈️';if(c.includes('snow'))return'❄️';if(c.includes('sleet'))return'🌨️';if(c.includes('heavyrain'))return'🌧️';if(c.includes('rain')||c.includes('shower'))return'🌦️';if(c.includes('fog'))return'🌫️';if(c.includes('partlycloudy'))return'⛅';if(c.includes('cloudy'))return'☁️';if(c.includes('fair'))return'🌤️';if(c.includes('clear'))return'☀️';return'🌡️';}
+function wDir(d){return['N','NØ','Ø','SØ','S','SV','V','NV'][Math.round(d/45)%8];}
+async function ovp(q){
+  const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),18000);
+  const r=await fetch('https://overpass.kumi.systems/api/interpreter?data='+encodeURIComponent(q),{signal:ctrl.signal});
+  clearTimeout(t);
+  if(!r.ok)throw new Error('API-feil '+r.status);
+  return JSON.parse(await r.text());
+}
+async function geocode(q){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q+' Norway')+'&format=json&limit=1',{headers:{'Accept-Language':'no'}});
+  const d=await r.json();
+  if(!d.length)throw new Error('Stedet ble ikke funnet');
+  return{lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name.split(',')[0]};
 }
 
-function windDir(deg) {
-  return ['N','NØ','Ø','SØ','S','SV','V','NV'][Math.round(deg/45)%8];
+// FUEL
+const BP={'circle k':{b95:19.49,b98:20.29,d:19.19},'uno-x':{b95:19.39,b98:20.19,d:19.09},'shell':{b95:19.59,b98:20.39,d:19.29},'esso':{b95:19.45,b98:20.25,d:19.15},'st1':{b95:19.42,b98:20.22,d:19.12},'rema':{b95:19.29,b98:null,d:19.01},'best':{b95:19.35,b98:null,d:19.05}};
+const DP={b95:19.44,b98:20.24,d:19.14};
+function gp(n){if(!n)return DP;const nl=n.toLowerCase();for(const[k,v]of Object.entries(BP))if(nl.includes(k))return v;return DP;}
+async function loadFuel(lat,lon,city){
+  const el=document.getElementById('fuelContent');
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter bensinstasjonar…</p></div>';
+  try{
+    const data=await ovp(`[out:json][timeout:25];node["amenity"="fuel"](around:40000,${lat},${lon});out 20;`);
+    const list=(data.elements||[]).filter(e=>e.lat&&e.lon).map(e=>({name:e.tags.brand||e.tags.name||'Bensinstasjon',addr:e.tags['addr:street']?(e.tags['addr:street']+' '+(e.tags['addr:housenumber']||'')).trim():city,lat:e.lat,lon:e.lon,dist:hav(lat,lon,e.lat,e.lon)})).sort((a,b)=>a.dist-b.dist).slice(0,15);
+    if(!list.length)throw new Error('Ingen stasjoner funnet innen 40km');
+    el.innerHTML=list.map(s=>{const p=gp(s.name);const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;return`<div class="card"><div class="fuel-row"><div class="fuel-info"><div class="fname">${s.name}</div><div class="faddr">${s.addr}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">${dbage(s.dist)}<a href="${maps}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Veibeskrivelse →</a></div></div><div class="fprices"><div class="pc"><div class="pclbl">95</div><div class="pcval pcg">${p.b95.toFixed(2)}</div></div>${p.b98?`<div class="pc"><div class="pclbl">98</div><div class="pcval pcg">${p.b98.toFixed(2)}</div></div>`:''}<div class="pc"><div class="pclbl">Diesel</div><div class="pcval pcb">${p.d.toFixed(2)}</div></div></div></div></div>`;}).join('')+`<div class="src">📍 Reelle stasjoner nær ${city} · Priser er snittprisoversikter per kjede · NOK/liter · <a href="https://drivstoffpriser.no" target="_blank">drivstoffpriser.no</a></div>`;
+  }catch(e){el.innerHTML=`<div class="err">Kunne ikke hente stasjoner: ${e.message}</div>`;}
 }
 
-function weatherIcon(code) {
-  if (!code) return '🌡️';
-  if (code.includes('thunder')) return '⛈️';
-  if (code.includes('snow')) return '❄️';
-  if (code.includes('sleet')) return '🌨️';
-  if (code.includes('heavyrain')) return '🌧️';
-  if (code.includes('rain') || code.includes('shower')) return '🌦️';
-  if (code.includes('fog')) return '🌫️';
-  if (code.includes('partlycloudy') || (code.includes('cloudy') && code.includes('partly'))) return '⛅';
-  if (code.includes('cloudy')) return '☁️';
-  if (code.includes('fair')) return '🌤️';
-  if (code.includes('clear')) return '☀️';
-  return '🌡️';
+// WEATHER
+async function loadWeather(lat,lon,city){
+  const el=document.getElementById('weatherContent');
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter vær fra Yr.no…</p></div>';
+  try{
+    const r=await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    const ts=data.properties.timeseries,now=ts[0],ins=now.data.instant.details;
+    const next=now.data.next_1_hours||now.data.next_6_hours;
+    const sym=next?.summary?.symbol_code||'',precip=next?.details?.precipitation_amount||0;
+    const temp=Math.round(ins.air_temperature),wind=Math.round(ins.wind_speed),hum=Math.round(ins.relative_humidity),pres=Math.round(ins.air_pressure_at_sea_level),cloud=Math.round(ins.cloud_area_fraction),uv=Math.round(ins.ultraviolet_index_clear_sky||0);
+    const feels=Math.round(temp-wind*0.5),uvC=uv<3?'uv-low':uv<6?'uv-mid':'uv-high',uvL=uv<3?'Lav UV':uv<6?'Moderat UV':'Høy UV';
+    const daily=[],seen=new Set();
+    for(const t of ts){const date=t.time.split('T')[0];if(!seen.has(date)&&t.data.next_6_hours){seen.add(date);const s=t.data.next_6_hours.summary.symbol_code;daily.push({day:new Date(t.time).toLocaleDateString('nb-NO',{weekday:'short'}),icon:wIcon(s),hi:Math.round(t.data.next_6_hours.details.air_temperature_max||t.data.instant.details.air_temperature),lo:Math.round(t.data.next_6_hours.details.air_temperature_min||t.data.instant.details.air_temperature-3)});if(daily.length>=7)break;}}
+    el.innerHTML=`<div class="card"><div class="wx-hero"><span class="wx-icon">${wIcon(sym)}</span><div><div class="wx-temp">${temp}°</div><div class="wx-city">${city}</div><div class="wx-feels">Føles som ${feels}°C · <span class="${uvC}">${uvL} ${uv}</span></div></div></div><div class="wx-grid"><div class="wx-m"><div class="wx-ml">Vind</div><div class="wx-mv">${wind}<span class="wx-mu"> m/s</span></div><div class="wx-ms">${wDir(ins.wind_from_direction||0)}</div></div><div class="wx-m"><div class="wx-ml">Luftfukt.</div><div class="wx-mv">${hum}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">Trykk</div><div class="wx-mv">${pres}<span class="wx-mu"> hPa</span></div></div><div class="wx-m"><div class="wx-ml">Nedbør</div><div class="wx-mv">${precip.toFixed(1)}<span class="wx-mu"> mm</span></div></div><div class="wx-m"><div class="wx-ml">Skydekke</div><div class="wx-mv">${cloud}<span class="wx-mu">%</span></div></div><div class="wx-m"><div class="wx-ml">UV-indeks</div><div class="wx-mv">${uv}</div></div></div><div class="fc-lbl">7-dagersvarsel</div><div class="fc-row">${daily.map((d,i)=>`<div class="fc-item${i===0?' today':''}"><div class="fc-day">${i===0?'I dag':d.day}</div><div class="fc-ico">${d.icon}</div><div class="fc-hi">${d.hi}°</div><div class="fc-lo">${d.lo}°</div></div>`).join('')}</div><div class="src" style="margin-top:12px">🟢 Sanntidsdata · <a href="https://yr.no" target="_blank">yr.no</a> · Oppdateres hver time</div></div>`;
+  }catch(e){el.innerHTML=`<div class="err">Kunne ikke hente vær: ${e.message}. Prøv <a href="https://yr.no" target="_blank">yr.no</a></div>`;}
 }
 
-function distBadge(d) {
-  if (d < 5) return `<span class="dist-badge db-near">📍 ${d.toFixed(1)} km</span>`;
-  if (d < 20) return `<span class="dist-badge db-mid">📍 ${d.toFixed(1)} km</span>`;
-  return `<span class="dist-badge db-far">📍 ${d.toFixed(1)} km</span>`;
+// SEVERDIGHETER
+const ST={viewpoint:{i:'🏔️',l:'Utsiktspunkt'},museum:{i:'🏛️',l:'Museum'},attraction:{i:'⭐',l:'Attraksjon'},castle:{i:'🏰',l:'Borg'},ruins:{i:'🗿',l:'Ruiner'},monument:{i:'🪨',l:'Monument'},memorial:{i:'🕊️',l:'Minnesmerke'},peak:{i:'⛰️',l:'Fjelltopp'},waterfall:{i:'💧',l:'Foss'},beach:{i:'🏖️',l:'Strand'},lighthouse:{i:'🗼',l:'Fyr'},cave_entrance:{i:'🕳️',l:'Grotte'}};
+function gst(t){if(t.man_made==='lighthouse')return ST.lighthouse;if(t.natural==='peak')return ST.peak;if(t.natural==='waterfall')return ST.waterfall;if(t.natural==='beach')return ST.beach;if(t.natural==='cave_entrance')return ST.cave_entrance;if(t.historic==='castle')return ST.castle;if(t.historic==='ruins')return ST.ruins;if(t.historic==='monument')return ST.monument;if(t.historic==='memorial')return ST.memorial;if(t.tourism==='viewpoint')return ST.viewpoint;if(t.tourism==='museum')return ST.museum;return ST.attraction;}
+async function loadSights(lat,lon,city){
+  const el=document.getElementById('sightsContent');
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Leter etter severdigheter…</p></div>';
+  try{
+    const R=80000,q=`[out:json][timeout:25];(node["tourism"~"viewpoint|museum|attraction"](around:${R},${lat},${lon});node["historic"~"castle|ruins|monument|memorial"](around:${R},${lat},${lon});node["natural"~"waterfall|beach|cave_entrance"](around:${R},${lat},${lon});node["man_made"="lighthouse"](around:${R},${lat},${lon});node["natural"="peak"]["ele"](around:${R},${lat},${lon}););out 40;`;
+    const data=await ovp(q);
+    let items=(data.elements||[]).filter(e=>e.tags&&(e.tags['name:no']||e.tags.name)).filter(e=>e.tags.natural!=='peak'||parseInt(e.tags.ele||'0')>300).map(e=>({...e,name:e.tags['name:no']||e.tags.name,dist:hav(lat,lon,e.lat,e.lon)})).filter(e=>e.lat&&e.lon).sort((a,b)=>a.dist-b.dist).slice(0,20);
+    if(!items.length){el.innerHTML='<div class="empty">Ingen severdigheter funnet. Prøv en større by i nærheten.</div>';return;}
+    el.innerHTML=items.map(e=>{const t=gst(e.tags);const dc=e.dist<10?'dbn':e.dist<40?'dbm':'dbf';const maps=`https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`;const wiki=e.tags.wikipedia;return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${e.name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${e.dist.toFixed(1)} km</span>${e.tags.ele?`<span style="font-size:11px;color:var(--text2)">⬆️ ${e.tags.ele}m</span>`:''}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>${wiki?`<a class="bo" href="https://no.wikipedia.org/wiki/${encodeURIComponent(wiki.replace('no:',''))}" target="_blank">Wikipedia</a>`:''}</div></div></div></div>`;}).join('')+`<div class="src">OpenStreetMap · Innen 80km fra ${city}</div>`;
+  }catch(e){el.innerHTML=`<div class="err">Kunne ikke laste severdigheter: ${e.message}</div>`;}
 }
 
-// ── GEOCODE ──
-async function geocode(query) {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' Norway')}&format=json&limit=1&accept-language=no`;
-  const r = await fetch(url, { headers: { 'Accept-Language': 'no' } });
-  const d = await r.json();
-  if (!d.length) throw new Error('Stedet ble ikke funnet');
-  return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), name: d[0].display_name.split(',')[0] };
+// OVERNATTING
+const OT={hotel:{i:'🏨',l:'Hotell'},hostel:{i:'🛏️',l:'Hostel'},guest_house:{i:'🏡',l:'Pensjonat'},motel:{i:'🚗',l:'Motell'},camp_site:{i:'⛺',l:'Camping'},chalet:{i:'🏔️',l:'Hytte'},alpine_hut:{i:'🏕️',l:'Fjellhytte'},wilderness_hut:{i:'🪵',l:'Utmarkshytte'}};
+async function loadStay(lat,lon,city){
+  const el=document.getElementById('stayContent');
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Leter etter overnatting…</p></div>';
+  try{
+    const q=`[out:json][timeout:25];(node["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet|alpine_hut|wilderness_hut"](around:40000,${lat},${lon});way["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet"](around:40000,${lat},${lon}););out center 30;`;
+    const data=await ovp(q);
+    let items=(data.elements||[]).filter(e=>e.tags&&(e.tags.name||e.tags['name:no'])).map(e=>({name:e.tags['name:no']||e.tags.name,type:e.tags.tourism,stars:e.tags.stars||null,phone:e.tags.phone||e.tags['contact:phone']||null,website:e.tags.website||e.tags['contact:website']||null,lat:e.lat||e.center?.lat,lon:e.lon||e.center?.lon,dist:hav(lat,lon,e.lat||e.center?.lat,e.lon||e.center?.lon)})).filter(e=>e.lat&&e.lon).sort((a,b)=>a.dist-b.dist).slice(0,20);
+    if(!items.length){el.innerHTML='<div class="empty">Ingen overnatting funnet innen 40km.</div>';return;}
+    el.innerHTML=items.map(s=>{const t=OT[s.type]||{i:'🏠',l:'Overnatting'};const dc=s.dist<5?'dbn':s.dist<20?'dbm':'dbf';const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;const stars=s.stars?'⭐'.repeat(Math.min(+s.stars,5)):'';return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${s.name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span>${stars?`<span style="font-size:12px">${stars}</span>`:''}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>${s.website?`<a class="bo" href="${s.website}" target="_blank">Nettside</a>`:''} ${s.phone?`<a class="bo" href="tel:${s.phone}">Ring</a>`:''}</div></div></div></div>`;}).join('')+`<div class="src">OpenStreetMap · Overnatting innen 40km fra ${city}</div>`;
+  }catch(e){el.innerHTML=`<div class="err">Kunne ikke laste overnatting: ${e.message}</div>`;}
 }
 
-// ── FUEL ──
-const BRAND_PRICES = {
-  'circle k':   { b95: 19.49, b98: 20.29, diesel: 19.19 },
-  'uno-x':      { b95: 19.39, b98: 20.19, diesel: 19.09 },
-  'shell':      { b95: 19.59, b98: 20.39, diesel: 19.29 },
-  'esso':       { b95: 19.45, b98: 20.25, diesel: 19.15 },
-  'st1':        { b95: 19.42, b98: 20.22, diesel: 19.12 },
-  'rema':       { b95: 19.29, b98: null,  diesel: 19.01 },
-  'best':       { b95: 19.35, b98: null,  diesel: 19.05 },
-  'primus':     { b95: 19.38, b98: null,  diesel: 19.08 },
-};
-const DEFAULT_PRICES = { b95: 19.44, b98: 20.24, diesel: 19.14 };
-
-function getPrices(name) {
-  if (!name) return DEFAULT_PRICES;
-  const n = name.toLowerCase();
-  for (const [brand, prices] of Object.entries(BRAND_PRICES)) {
-    if (n.includes(brand)) return prices;
-  }
-  return DEFAULT_PRICES;
+// MAT OG DRIKK
+const BI={'burger king':'👑',"mcdonald":'🍟','kfc':'🍗','subway':'🥖','pizza hut':'🍕','peppes':'🍕','domino':'🍕','taco bell':'🌮','max burger':'🍔','starbucks':'☕','espresso house':'☕','waynes coffee':'☕','7-eleven':'🏪','narvesen':'🏪','deli de luca':'🥐'};
+const FT={fast_food:{i:'🍔',l:'Fastfood'},restaurant:{i:'🍽️',l:'Restaurant'},cafe:{i:'☕',l:'Kafé'},pub:{i:'🍺',l:'Pub'},bar:{i:'🍹',l:'Bar'},food_court:{i:'🏪',l:'Foodcourt'}};
+const CL={pizza:'🍕 Pizza',burger:'🍔 Burger',sushi:'🍣 Sushi',chinese:'🥡 Kinesisk',indian:'🍛 Indisk',thai:'🍜 Thai',italian:'🍝 Italiensk',mexican:'🌮 Meksikansk',kebab:'🥙 Kebab',seafood:'🦞 Sjømat',norwegian:'🇳🇴 Norsk'};
+async function loadFood(lat,lon,city){
+  const el=document.getElementById('foodContent');
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Leter etter spisesteder…</p></div>';
+  try{
+    const q=`[out:json][timeout:25];(node["amenity"~"restaurant|fast_food|cafe|pub|bar|food_court"](around:20000,${lat},${lon}););out 40;`;
+    const data=await ovp(q);
+    let items=(data.elements||[]).filter(e=>e.tags&&e.tags.name).map(e=>({name:e.tags.name,type:e.tags.amenity,cuisine:e.tags.cuisine||null,phone:e.tags.phone||null,website:e.tags.website||e.tags['contact:website']||null,hours:e.tags.opening_hours||null,lat:e.lat,lon:e.lon,dist:hav(lat,lon,e.lat,e.lon)})).sort((a,b)=>a.dist-b.dist).slice(0,25);
+    if(!items.length){el.innerHTML='<div class="empty">Ingen spisesteder funnet innen 20km.</div>';return;}
+    el.innerHTML=items.map(s=>{const ti=FT[s.type]||{i:'🍽️',l:'Spisestad'};const nl=s.name.toLowerCase();const bi=Object.entries(BI).find(([b])=>nl.includes(b))?.[1];const icon=bi||ti.i;const dc=s.dist<2?'dbn':s.dist<10?'dbm':'dbf';const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;const cuis=s.cuisine?CL[s.cuisine.split(';')[0]]:null;return`<div class="card"><div class="prow"><div class="pico" style="font-size:22px">${icon}</div><div class="pbody"><div class="pname">${s.name}</div><div class="ptags"><span class="tag tb">${ti.l}</span><span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span>${cuis?`<span style="font-size:11px;color:var(--text2)">${cuis}</span>`:''}</div>${s.hours?`<div class="psub">🕐 ${s.hours}</div>`:''}<div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>${s.website?`<a class="bo" href="${s.website}" target="_blank">Nettside</a>`:''} ${s.phone?`<a class="bo" href="tel:${s.phone}">Ring</a>`:''}</div></div></div></div>`;}).join('')+`<div class="src">OpenStreetMap · Spisesteder innen 20km fra ${city}</div>`;
+  }catch(e){el.innerHTML=`<div class="err">Kunne ikke laste spisesteder: ${e.message}</div>`;}
 }
 
-async function loadFuel(lat, lon, city) {
-  const el = document.getElementById('fuelContent');
-  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter bensinstasjonar…</p></div>';
-  try {
-    const query = `[out:json][timeout:25];node["amenity"="fuel"](around:40000,${lat},${lon});out 20;`;
-    const url = `https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(query)}`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
-    const r = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!r.ok) throw new Error('Overpass-feil');
-    const text = await r.text();
-    const data = JSON.parse(text);
-    const stations = (data.elements || [])
-      .filter(e => e.lat && e.lon)
-      .map(e => ({
-        name: e.tags['brand'] || e.tags['name'] || 'Bensinstasjon',
-        addr: e.tags['addr:street'] ? `${e.tags['addr:street']} ${e.tags['addr:housenumber']||''}`.trim() : city,
-        lat: e.lat, lon: e.lon,
-        dist: haversine(lat, lon, e.lat, e.lon)
-      }))
-      .sort((a,b) => a.dist - b.dist)
-      .slice(0, 15);
-
-    if (!stations.length) throw new Error('Ingen stasjoner funnet');
-
-    const html = stations.map(s => {
-      const p = getPrices(s.name);
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
-      return `<div class="card fade-in">
-        <div class="fuel-row">
-          <div class="fuel-info">
-            <div class="fuel-name">${s.name}</div>
-            <div class="fuel-addr">${s.addr}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap">
-              ${distBadge(s.dist)}
-              <a href="${mapsUrl}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Veibeskrivelse →</a>
-            </div>
-          </div>
-          <div class="fuel-prices">
-            <div class="price-chip"><div class="price-chip-lbl">95</div><div class="price-chip-val pc-g">${p.b95.toFixed(2)}</div></div>
-            ${p.b98 ? `<div class="price-chip"><div class="price-chip-lbl">98</div><div class="price-chip-val pc-g">${p.b98.toFixed(2)}</div></div>` : ''}
-            <div class="price-chip"><div class="price-chip-lbl">Diesel</div><div class="price-chip-val pc-b">${p.diesel.toFixed(2)}</div></div>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-
-    el.innerHTML = html + `<div class="source-tag">📍 Stasjoner nær ${city} · Priser er snittprisoversikter per kjede · NOK/liter · <a href="https://drivstoffpriser.no" target="_blank">Live priser: drivstoffpriser.no</a></div>`;
-  } catch(e) {
-    el.innerHTML = `<div class="error-state">Kunne ikke hente stasjoner: ${e.message}</div>`;
+// MAIN
+async function handleSearch(){
+  const q=document.getElementById('cityInput').value.trim()||'Oslo';
+  document.getElementById('locName').textContent='…';
+  try{
+    const geo=await geocode(q);
+    document.getElementById('locName').textContent=geo.name;
+    loadFuel(geo.lat,geo.lon,geo.name);
+    loadWeather(geo.lat,geo.lon,geo.name);
+    loadSights(geo.lat,geo.lon,geo.name);
+    loadStay(geo.lat,geo.lon,geo.name);
+    loadFood(geo.lat,geo.lon,geo.name);
+  }catch(e){
+    ['fuelContent','weatherContent','sightsContent','stayContent','foodContent'].forEach(id=>{document.getElementById(id).innerHTML=`<div class="err">${e.message}</div>`;});
   }
 }
 
-// ── WEATHER ──
-async function loadWeather(lat, lon, city) {
-  const el = document.getElementById('weatherContent');
-  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter vær fra Yr.no…</p></div>';
-  try {
-    const metUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`;
-    const r = await fetch(metUrl);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    const ts = data.properties.timeseries;
-    const now = ts[0];
-    const ins = now.data.instant.details;
-    const next = now.data.next_1_hours || now.data.next_6_hours;
-    const sym = next?.summary?.symbol_code || '';
-    const precip = next?.details?.precipitation_amount || 0;
+// fix typo in inline use
+function dbage(d){return dbage2(d);}
+function dbage2(d){const c=d<5?'dbn':d<20?'dbm':'dbf';return`<span class="db ${c}">📍 ${d.toFixed(1)} km</span>`;}
 
-    const temp = Math.round(ins.air_temperature);
-    const wind = Math.round(ins.wind_speed);
-    const hum = Math.round(ins.relative_humidity);
-    const pres = Math.round(ins.air_pressure_at_sea_level);
-    const cloud = Math.round(ins.cloud_area_fraction);
-    const uv = Math.round(ins.ultraviolet_index_clear_sky || 0);
-    const feels = Math.round(temp - wind * 0.5);
-    const wdir = windDir(ins.wind_from_direction || 0);
-    const uvClass = uv < 3 ? 'uv-low' : uv < 6 ? 'uv-mid' : 'uv-high';
-    const uvLabel = uv < 3 ? 'Lav UV' : uv < 6 ? 'Moderat UV' : 'Høy UV';
-
-    // Build daily forecast
-    const daily = [];
-    const seen = new Set();
-    for (const t of ts) {
-      const date = t.time.split('T')[0];
-      if (!seen.has(date) && t.data.next_6_hours) {
-        seen.add(date);
-        const s = t.data.next_6_hours.summary.symbol_code;
-        const maxT = t.data.next_6_hours.details.air_temperature_max;
-        const minT = t.data.next_6_hours.details.air_temperature_min;
-        daily.push({
-          day: new Date(t.time).toLocaleDateString('nb-NO', { weekday: 'short' }),
-          icon: weatherIcon(s),
-          hi: Math.round(maxT || t.data.instant.details.air_temperature),
-          lo: Math.round(minT || t.data.instant.details.air_temperature - 3),
-          today: seen.size === 1
-        });
-        if (daily.length >= 7) break;
-      }
-    }
-
-    el.innerHTML = `
-      <div class="card fade-in">
-        <div class="wx-hero">
-          <span class="wx-icon">${weatherIcon(sym)}</span>
-          <div>
-            <div class="wx-temp">${temp}°</div>
-            <div class="wx-city">${city}</div>
-            <div class="wx-feels">Føles som ${feels}°C · <span class="uv-badge ${uvClass}">${uvLabel} ${uv}</span></div>
-          </div>
-        </div>
-        <div class="wx-grid">
-          <div class="wx-metric">
-            <div class="wx-m-label">Vind</div>
-            <div class="wx-m-val">${wind}<span class="wx-m-unit"> m/s</span></div>
-            <div class="wx-m-sub">${wdir}</div>
-          </div>
-          <div class="wx-metric">
-            <div class="wx-m-label">Luftfukt.</div>
-            <div class="wx-m-val">${hum}<span class="wx-m-unit">%</span></div>
-          </div>
-          <div class="wx-metric">
-            <div class="wx-m-label">Trykk</div>
-            <div class="wx-m-val">${pres}<span class="wx-m-unit"> hPa</span></div>
-          </div>
-          <div class="wx-metric">
-            <div class="wx-m-label">Nedbør</div>
-            <div class="wx-m-val">${precip.toFixed(1)}<span class="wx-m-unit"> mm</span></div>
-          </div>
-          <div class="wx-metric">
-            <div class="wx-m-label">Skydekke</div>
-            <div class="wx-m-val">${cloud}<span class="wx-m-unit">%</span></div>
-          </div>
-          <div class="wx-metric">
-            <div class="wx-m-label">UV-indeks</div>
-            <div class="wx-m-val">${uv}</div>
-          </div>
-        </div>
-        <div class="forecast-title">7-dagersvarsel</div>
-        <div class="forecast-row">
-          ${daily.map((d, i) => `<div class="fc-item${i===0?' today':''}">
-            <div class="fc-day">${i===0?'I dag':d.day}</div>
-            <div class="fc-ico">${d.icon}</div>
-            <div class="fc-hi">${d.hi}°</div>
-            <div class="fc-lo">${d.lo}°</div>
-          </div>`).join('')}
-        </div>
-        <div class="source-tag">🟢 Sanntidsdata · <a href="https://yr.no" target="_blank">yr.no</a> / api.met.no · Oppdateres hver time</div>
-      </div>`;
-  } catch (e) {
-    el.innerHTML = `<div class="error-state">Kunne ikke henteværdata: ${e.message}. Prøv <a href="https://yr.no" target="_blank">yr.no</a> direkte.</div>`;
-  }
-}
-
-// ── SIGHTSEEING ──
-const SIGHT_ICONS = ['🏔️','🏰','⛪','🏛️','🎨','🌊','🌲','🦌','🏞️','⛵','🗿','🎿','🌋','🏟️','🎭','🏗️'];
-
-async function loadSights(lat, lon, city) {
-  const el = document.getElementById('sightsContent');
-  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter kule steder…</p></div>';
-  try {
-    const radius = 80000;
-    const q = `[out:json][timeout:25];(node["tourism"~"viewpoint|museum|attraction"](around:${radius},${lat},${lon});node["historic"~"castle|ruins|monument|memorial"](around:${radius},${lat},${lon});node["natural"~"waterfall|beach|cave_entrance"](around:${radius},${lat},${lon});node["man_made"="lighthouse"](around:${radius},${lat},${lon});node["natural"="peak"]["ele"](around:${radius},${lat},${lon}););out 40;`;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 15000);
-    const r = await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(q)}`, { signal: ctrl.signal });
-    clearTimeout(t);
-    if (!r.ok) throw new Error('Overpass API-feil');
-    const data = JSON.parse(await r.text());
-    let elements = data.elements || [];
-
-    elements = elements
-      .filter(e => e.tags && (e.tags['name:no'] || e.tags.name))
-      .filter(e => {
-        // Filter out vague peaks without elevation or with very generic names
-        if (e.tags.natural === 'peak') {
-          const ele = parseInt(e.tags.ele || '0');
-          const name = (e.tags['name:no'] || e.tags.name || '').toLowerCase();
-          // Keep peaks with elevation > 300m or interesting names
-          return ele > 300 || name.includes('topp') || name.includes('fjell') || name.includes('horn');
-        }
-        return true;
-      })
-      .map(e => ({
-        ...e,
-        lat: e.lat || e.center?.lat,
-        lon: e.lon || e.center?.lon,
-        name: e.tags['name:no'] || e.tags.name,
-        dist: haversine(lat, lon, e.lat || e.center?.lat, e.lon || e.center?.lon)
-      }))
-      .filter(e => e.lat && e.lon)
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 20);
-
-    if (!elements.length) {
-      el.innerHTML = '<div class="loading-state"><p>Ingen steder funnet i nærheten. Prøv en større by i regionen.</p></div>';
-      return;
-    }
-
-    const typeInfo = {
-      viewpoint:      { icon: '🏔️', label: 'Utsiktspunkt' },
-      museum:         { icon: '🏛️', label: 'Museum' },
-      attraction:     { icon: '⭐', label: 'Attraksjon' },
-      castle:         { icon: '🏰', label: 'Borg/Slott' },
-      ruins:          { icon: '🗿', label: 'Ruiner' },
-      monument:       { icon: '🪨', label: 'Monument' },
-      peak:           { icon: '⛰️', label: 'Fjelltopp' },
-      waterfall:      { icon: '💧', label: 'Foss' },
-      beach:          { icon: '🏖️', label: 'Strand' },
-      lighthouse:     { icon: '🗼', label: 'Fyr' },
-      nature_reserve: { icon: '🌿', label: 'Naturreservat' },
-      arts_centre:    { icon: '🎨', label: 'Kunstsenter' },
-    };
-
-    function getType(tags) {
-      if (tags.man_made === 'lighthouse') return typeInfo.lighthouse;
-      if (tags.natural === 'peak') return typeInfo.peak;
-      if (tags.natural === 'waterfall') return typeInfo.waterfall;
-      if (tags.natural === 'beach') return typeInfo.beach;
-      if (tags.historic === 'castle') return typeInfo.castle;
-      if (tags.historic === 'ruins') return typeInfo.ruins;
-      if (tags.historic === 'monument') return typeInfo.monument;
-      if (tags.tourism === 'viewpoint') return typeInfo.viewpoint;
-      if (tags.tourism === 'museum') return typeInfo.museum;
-      if (tags.leisure === 'nature_reserve') return typeInfo.nature_reserve;
-      if (tags.amenity === 'arts_centre') return typeInfo.arts_centre;
-      return typeInfo.attraction;
-    }
-
-    el.innerHTML = elements.map(e => {
-      const t = getType(e.tags);
-      const dbc = e.dist < 10 ? 'db-near' : e.dist < 40 ? 'db-mid' : 'db-far';
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`;
-      const desc = e.tags['description:no'] || e.tags.description || e.tags.wikipedia || '';
-      return `<div class="card fade-in">
-        <div class="sight-row">
-          <div class="sight-ico">${t.icon}</div>
-          <div class="sight-body">
-            <div class="sight-title">${e.name}</div>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
-              <span style="font-size:11px;background:rgba(79,168,232,0.1);color:var(--accent);padding:2px 8px;border-radius:20px;">${t.label}</span>
-              <span class="dist-badge ${dbc}">📍 ${e.dist.toFixed(1)} km</span>
-            </div>
-            ${e.tags.ele ? `<div style="font-size:12px;color:var(--text2);margin-top:4px;">⬆️ ${e.tags.ele} m over havet</div>` : ''}
-            ${desc && !e.tags.ele ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5;">${desc.substring(0,120)}${desc.length>120?'…':''}</div>` : ''}
-            <div class="sight-btns">
-              <a class="btn-primary" href="${mapsUrl}" target="_blank" style="text-decoration:none;">Veibeskrivelse</a>
-              ${e.tags.wikipedia ? `<a class="btn-outline" href="https://no.wikipedia.org/wiki/${encodeURIComponent(e.tags.wikipedia.replace('no:',''))}" target="_blank">Wikipedia</a>` : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }).join('') + `<div class="source-tag">OpenStreetMap · Steder innen 80km fra ${city}</div>`;
-  } catch (e) {
-    el.innerHTML = `<div class="error-state">Kunne ikke laste attraksjoner: ${e.message}</div>`;
-  }
-}
-
-
-// ── OVERNATTING ──
-async function loadStay(lat, lon, city) {
-  const el = document.getElementById('stayContent');
-  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter overnatting…</p></div>';
-  try {
-    const q = `[out:json][timeout:25];(node["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet|alpine_hut|wilderness_hut"](around:40000,${lat},${lon});way["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet"](around:40000,${lat},${lon}););out center 30;`;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 15000);
-    const r = await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(q)}`, { signal: ctrl.signal });
-    clearTimeout(t);
-    if (!r.ok) throw new Error('Feil fra API');
-    const data = JSON.parse(await r.text());
-    let items = (data.elements || [])
-      .filter(e => e.tags && (e.tags.name || e.tags['name:no']))
-      .map(e => ({
-        name: e.tags['name:no'] || e.tags.name,
-        type: e.tags.tourism,
-        stars: e.tags.stars || null,
-        phone: e.tags.phone || e.tags['contact:phone'] || null,
-        website: e.tags.website || e.tags['contact:website'] || null,
-        lat: e.lat || e.center?.lat,
-        lon: e.lon || e.center?.lon,
-        dist: haversine(lat, lon, e.lat || e.center?.lat, e.lon || e.center?.lon)
-      }))
-      .filter(e => e.lat && e.lon)
-      .sort((a,b) => a.dist - b.dist)
-      .slice(0, 20);
-
-    if (!items.length) {
-      el.innerHTML = '<div class="loading-state"><p>Ingen overnatting funnet i nærheten.</p></div>';
-      return;
-    }
-
-    const typeLabels = {
-      hotel: { icon: '🏨', label: 'Hotell' },
-      hostel: { icon: '🛏️', label: 'Hostel' },
-      guest_house: { icon: '🏡', label: 'Pensjonat' },
-      motel: { icon: '🚗', label: 'Motell' },
-      camp_site: { icon: '⛺', label: 'Camping' },
-      chalet: { icon: '🏔️', label: 'Hytte' },
-      alpine_hut: { icon: '🏕️', label: 'Fjellhytte' },
-      wilderness_hut: { icon: '🪵', label: 'Utmarkshytte' },
-    };
-
-    el.innerHTML = items.map(s => {
-      const ti = typeLabels[s.type] || { icon: '🏠', label: 'Overnatting' };
-      const dbc = s.dist < 5 ? 'db-near' : s.dist < 20 ? 'db-mid' : 'db-far';
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
-      const stars = s.stars ? '⭐'.repeat(Math.min(parseInt(s.stars), 5)) : '';
-      return `<div class="card fade-in">
-        <div class="sight-row">
-          <div class="sight-ico">${ti.icon}</div>
-          <div class="sight-body">
-            <div class="sight-title">${s.name}</div>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
-              <span style="font-size:11px;background:rgba(79,168,232,0.1);color:var(--accent);padding:2px 8px;border-radius:20px;">${ti.label}</span>
-              <span class="dist-badge ${dbc}">📍 ${s.dist.toFixed(1)} km</span>
-              ${stars ? `<span style="font-size:11px;">${stars}</span>` : ''}
-            </div>
-            <div class="sight-btns">
-              <a class="btn-primary" href="${mapsUrl}" target="_blank" style="text-decoration:none;">Veibeskrivelse</a>
-              ${s.website ? `<a class="btn-outline" href="${s.website}" target="_blank">Nettside</a>` : ''}
-              ${s.phone ? `<a class="btn-outline" href="tel:${s.phone}">${s.phone}</a>` : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }).join('') + `<div class="source-tag">OpenStreetMap · Overnatting innen 40km fra ${city}</div>`;
-  } catch(e) {
-    el.innerHTML = `<div class="error-state">Kunne ikke laste overnatting: ${e.message}</div>`;
-  }
-}
-
-// ── MAT OG FASTFOOD ──
-async function loadFood(lat, lon, city) {
-  const el = document.getElementById('foodContent');
-  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter spisesteder…</p></div>';
-  try {
-    const q = `[out:json][timeout:25];(node["amenity"~"restaurant|fast_food|cafe|pub|bar|food_court"](around:20000,${lat},${lon}););out 40;`;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 15000);
-    const r = await fetch(`https://overpass.kumi.systems/api/interpreter?data=${encodeURIComponent(q)}`, { signal: ctrl.signal });
-    clearTimeout(t);
-    if (!r.ok) throw new Error('Feil fra API');
-    const data = JSON.parse(await r.text());
-
-    let items = (data.elements || [])
-      .filter(e => e.tags && e.tags.name)
-      .map(e => ({
-        name: e.tags.name,
-        type: e.tags.amenity,
-        cuisine: e.tags.cuisine || null,
-        brand: e.tags.brand || null,
-        phone: e.tags.phone || e.tags['contact:phone'] || null,
-        website: e.tags.website || e.tags['contact:website'] || null,
-        opening: e.tags.opening_hours || null,
-        lat: e.lat, lon: e.lon,
-        dist: haversine(lat, lon, e.lat, e.lon)
-      }))
-      .sort((a,b) => a.dist - b.dist)
-      .slice(0, 25);
-
-    if (!items.length) {
-      el.innerHTML = '<div class="loading-state"><p>Ingen spisesteder funnet i nærheten.</p></div>';
-      return;
-    }
-
-    // Known fast food brand icons
-    const brandIcons = {
-      "burger king": "👑", "mcdonald's": "🍟", "mcdonalds": "🍟",
-      "kfc": "🍗", "subway": "🥖", "pizza hut": "🍕",
-      "domino's": "🍕", "dominos": "🍕", "taco bell": "🌮",
-      "peppes": "🍕", "peppes pizza": "🍕", "little caesar": "🍕",
-      "max burgers": "🍔", "max": "🍔", "denny's": "🥞",
-      "starbucks": "☕", "waynes coffee": "☕", "espresso house": "☕",
-      "seven eleven": "🏪", "7-eleven": "🏪",
-    };
-
-    const typeInfo = {
-      fast_food:   { icon: '🍔', label: 'Fastfood' },
-      restaurant:  { icon: '🍽️', label: 'Restaurant' },
-      cafe:        { icon: '☕', label: 'Kafé' },
-      pub:         { icon: '🍺', label: 'Pub' },
-      bar:         { icon: '🍹', label: 'Bar' },
-      food_court:  { icon: '🏪', label: 'Foodcourt' },
-    };
-
-    const cuisineLabels = {
-      pizza: '🍕 Pizza', burger: '🍔 Burger', sushi: '🍣 Sushi',
-      chinese: '🥡 Kinesisk', indian: '🍛 Indisk', thai: '🍜 Thai',
-      italian: '🍝 Italiensk', mexican: '🌮 Meksikansk',
-      kebab: '🥙 Kebab', fish_and_chips: '🐟 Fish & Chips',
-      seafood: '🦞 Sjømat', norwegian: '🇳🇴 Norsk mat',
-      sandwich: '🥪 Sandwich', ice_cream: '🍦 Is',
-      coffee_shop: '☕ Kaffe',
-    };
-
-    el.innerHTML = items.map(s => {
-      const ti = typeInfo[s.type] || { icon: '🍽️', label: 'Spisestad' };
-      const nameLower = s.name.toLowerCase();
-      const brandIcon = Object.entries(brandIcons).find(([b]) => nameLower.includes(b))?.[1];
-      const icon = brandIcon || ti.icon;
-      const dbc = s.dist < 2 ? 'db-near' : s.dist < 10 ? 'db-mid' : 'db-far';
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
-      const cuisineTag = s.cuisine ? cuisineLabels[s.cuisine.split(';')[0]] : null;
-      return `<div class="card fade-in">
-        <div class="sight-row">
-          <div class="sight-ico" style="font-size:22px">${icon}</div>
-          <div class="sight-body">
-            <div class="sight-title">${s.name}</div>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
-              <span style="font-size:11px;background:rgba(79,168,232,0.1);color:var(--accent);padding:2px 8px;border-radius:20px;">${ti.label}</span>
-              <span class="dist-badge ${dbc}">📍 ${s.dist.toFixed(1)} km</span>
-              ${cuisineTag ? `<span style="font-size:11px;color:var(--text2)">${cuisineTag}</span>` : ''}
-            </div>
-            ${s.opening ? `<div style="font-size:11px;color:var(--text2);margin-top:4px;">🕐 ${s.opening}</div>` : ''}
-            <div class="sight-btns">
-              <a class="btn-primary" href="${mapsUrl}" target="_blank" style="text-decoration:none;">Veibeskrivelse</a>
-              ${s.website ? `<a class="btn-outline" href="${s.website}" target="_blank">Nettside</a>` : ''}
-              ${s.phone ? `<a class="btn-outline" href="tel:${s.phone}">Ring</a>` : ''}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }).join('') + `<div class="source-tag">OpenStreetMap · Spisesteder innen 20km fra ${city}</div>`;
-  } catch(e) {
-    el.innerHTML = `<div class="error-state">Kunne ikke laste spisesteder: ${e.message}</div>`;
-  }
-}
-
-// ── MAIN SEARCH ──
-async function handleSearch() {
-  const query = document.getElementById('cityInput').value.trim() || 'Oslo';
-  document.getElementById('locName').textContent = '…';
-  try {
-    const geo = await geocode(query);
-    document.getElementById('locName').textContent = geo.name;
-    loadFuel(geo.lat, geo.lon, geo.name);
-    loadWeather(geo.lat, geo.lon, geo.name);
-    loadSights(geo.lat, geo.lon, geo.name);
-    loadStay(geo.lat, geo.lon, geo.name);
-    loadFood(geo.lat, geo.lon, geo.name);
-  } catch (e) {
-    ['fuelContent', 'weatherContent', 'sightsContent'].forEach(id => {
-      document.getElementById(id).innerHTML = `<div class="error-state">${e.message}</div>`;
-    });
-  }
-}
-
-// Enter key support
-document.getElementById('cityInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') handleSearch();
-});
-
-// Initial load
+document.getElementById('cityInput').addEventListener('keydown',e=>{if(e.key==='Enter')handleSearch();});
 handleSearch();
 </script>
 </body>
