@@ -454,7 +454,7 @@ async function loadFuel(lat, lon, city) {
 
   try {
     const apiUrl = 'https://drivstoffpriser.no/api/stations';
-    const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(apiUrl)}`);
+    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`);
     if (!r.ok) throw new Error('API-feil');
     const data = await r.json();
 
@@ -516,7 +516,7 @@ async function loadWeather(lat, lon, city) {
   el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Henter vær fra Yr.no…</p></div>';
   try {
     const metUrl = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`;
-    const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(metUrl)}`);
+    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(metUrl)}`);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     const ts = data.properties.timeseries;
@@ -616,31 +616,106 @@ const SIGHT_ICONS = ['🏔️','🏰','⛪','🏛️','🎨','🌊','🌲','🦌
 
 async function loadSights(lat, lon, city) {
   const el = document.getElementById('sightsContent');
-  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter attraksjoner…</p></div>';
+  el.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Leter etter kule steder…</p></div>';
   try {
-    const r = await fetch(`https://no.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=50000&gslimit=16&format=json&origin=*`);
-    const data = await r.json();
-    const pages = data.query?.geosearch || [];
-    if (!pages.length) { el.innerHTML = '<div class="loading-state"><p>Ingen attraksjoner funnet i nærheten.</p></div>'; return; }
+    const radius = 80000;
+    const query = `[out:json][timeout:25];(
+      node["tourism"="viewpoint"](around:${radius},${lat},${lon});
+      node["tourism"="museum"](around:${radius},${lat},${lon});
+      node["tourism"="attraction"](around:${radius},${lat},${lon});
+      node["historic"="castle"](around:${radius},${lat},${lon});
+      node["historic"="ruins"](around:${radius},${lat},${lon});
+      node["historic"="monument"](around:${radius},${lat},${lon});
+      node["natural"="peak"](around:${radius},${lat},${lon});
+      node["natural"="waterfall"](around:${radius},${lat},${lon});
+      node["natural"="beach"](around:${radius},${lat},${lon});
+      node["man_made"="lighthouse"](around:${radius},${lat},${lon});
+      node["leisure"="nature_reserve"](around:${radius},${lat},${lon});
+      node["amenity"="arts_centre"](around:${radius},${lat},${lon});
+      way["tourism"="viewpoint"](around:${radius},${lat},${lon});
+      way["historic"="castle"](around:${radius},${lat},${lon});
+      way["man_made"="lighthouse"](around:${radius},${lat},${lon});
+    );out center 30;`;
 
-    el.innerHTML = pages.map((p, i) => {
-      const dist = haversine(lat, lon, p.lat, p.lon);
-      const dbc = dist < 10 ? 'db-near' : dist < 30 ? 'db-mid' : 'db-far';
-      const icon = SIGHT_ICONS[i % SIGHT_ICONS.length];
+    const r = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: query
+    });
+    if (!r.ok) throw new Error('Overpass API-feil');
+    const data = await r.json();
+    let elements = data.elements || [];
+
+    elements = elements
+      .filter(e => e.tags && (e.tags.name || e.tags['name:no']))
+      .map(e => ({
+        ...e,
+        lat: e.lat || e.center?.lat,
+        lon: e.lon || e.center?.lon,
+        name: e.tags['name:no'] || e.tags.name,
+        dist: haversine(lat, lon, e.lat || e.center?.lat, e.lon || e.center?.lon)
+      }))
+      .filter(e => e.lat && e.lon)
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, 20);
+
+    if (!elements.length) {
+      el.innerHTML = '<div class="loading-state"><p>Ingen steder funnet i nærheten. Prøv en større by i regionen.</p></div>';
+      return;
+    }
+
+    const typeInfo = {
+      viewpoint:      { icon: '🏔️', label: 'Utsiktspunkt' },
+      museum:         { icon: '🏛️', label: 'Museum' },
+      attraction:     { icon: '⭐', label: 'Attraksjon' },
+      castle:         { icon: '🏰', label: 'Borg/Slott' },
+      ruins:          { icon: '🗿', label: 'Ruiner' },
+      monument:       { icon: '🪨', label: 'Monument' },
+      peak:           { icon: '⛰️', label: 'Fjelltopp' },
+      waterfall:      { icon: '💧', label: 'Foss' },
+      beach:          { icon: '🏖️', label: 'Strand' },
+      lighthouse:     { icon: '🗼', label: 'Fyr' },
+      nature_reserve: { icon: '🌿', label: 'Naturreservat' },
+      arts_centre:    { icon: '🎨', label: 'Kunstsenter' },
+    };
+
+    function getType(tags) {
+      if (tags.man_made === 'lighthouse') return typeInfo.lighthouse;
+      if (tags.natural === 'peak') return typeInfo.peak;
+      if (tags.natural === 'waterfall') return typeInfo.waterfall;
+      if (tags.natural === 'beach') return typeInfo.beach;
+      if (tags.historic === 'castle') return typeInfo.castle;
+      if (tags.historic === 'ruins') return typeInfo.ruins;
+      if (tags.historic === 'monument') return typeInfo.monument;
+      if (tags.tourism === 'viewpoint') return typeInfo.viewpoint;
+      if (tags.tourism === 'museum') return typeInfo.museum;
+      if (tags.leisure === 'nature_reserve') return typeInfo.nature_reserve;
+      if (tags.amenity === 'arts_centre') return typeInfo.arts_centre;
+      return typeInfo.attraction;
+    }
+
+    el.innerHTML = elements.map(e => {
+      const t = getType(e.tags);
+      const dbc = e.dist < 10 ? 'db-near' : e.dist < 40 ? 'db-mid' : 'db-far';
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`;
+      const desc = e.tags['description:no'] || e.tags.description || e.tags.wikipedia || '';
       return `<div class="card fade-in">
         <div class="sight-row">
-          <div class="sight-ico">${icon}</div>
+          <div class="sight-ico">${t.icon}</div>
           <div class="sight-body">
-            <div class="sight-title">${p.title}</div>
-            <div class="sight-meta"><span class="dist-badge ${dbc}">📍 ${dist.toFixed(1)} km fra ${city}</span></div>
+            <div class="sight-title">${e.name}</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
+              <span style="font-size:11px;background:rgba(79,168,232,0.1);color:var(--accent);padding:2px 8px;border-radius:20px;">${t.label}</span>
+              <span class="dist-badge ${dbc}">📍 ${e.dist.toFixed(1)} km</span>
+            </div>
+            ${desc ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5;">${desc.substring(0,120)}${desc.length>120?'…':''}</div>` : ''}
             <div class="sight-btns">
-              <button class="btn-primary" onclick="window.open('https://no.wikipedia.org/?curid=${p.pageid}','_blank')">Les mer</button>
-              <a class="btn-outline" href="https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${p.lat},${p.lon},14z" target="_blank">Kart</a>
+              <a class="btn-primary" href="${mapsUrl}" target="_blank" style="text-decoration:none;">Veibeskrivelse</a>
+              ${e.tags.wikipedia ? `<a class="btn-outline" href="https://no.wikipedia.org/wiki/${encodeURIComponent(e.tags.wikipedia.replace('no:',''))}" target="_blank">Wikipedia</a>` : ''}
             </div>
           </div>
         </div>
       </div>`;
-    }).join('') + `<div class="source-tag">Wikipedia geosøk · Steder innen 50km fra ${city}</div>`;
+    }).join('') + `<div class="source-tag">OpenStreetMap · Steder innen 80km fra ${city}</div>`;
   } catch (e) {
     el.innerHTML = `<div class="error-state">Kunne ikke laste attraksjoner: ${e.message}</div>`;
   }
