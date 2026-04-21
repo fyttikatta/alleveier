@@ -212,18 +212,33 @@ async function loadFuel(lat,lon,city){
     const q=`[out:json][timeout:25];(node["highway"="rest_area"](around:80000,${lat},${lon});node["amenity"="rest_area"](around:80000,${lat},${lon});node["tourism"="caravan_site"](around:80000,${lat},${lon});way["highway"="rest_area"](around:80000,${lat},${lon});way["amenity"="rest_area"](around:80000,${lat},${lon}););out center 40;`;
     const data=await ovp(q);
     let items=(data.elements||[])
-      .map(e=>({
-        name:e.tags['name:no']||e.tags.name||null,
-        type:e.tags,
-        toilet:e.tags.toilets==='yes'||e.tags['toilets']===true||e.tags.amenity==='toilets',
-        table:e.tags.picnic_table==='yes'||e.tags['picnic_table']===true,
-        fire:e.tags.fireplace==='yes'||e.tags['fireplace']===true,
-        fee:e.tags.fee==='yes',
-        water:e.tags.drinking_water==='yes',
-        desc:e.tags.description||e.tags['description:no']||null,
-        lat:e.lat||e.center?.lat,
-        lon:e.lon||e.center?.lon,
-      }))
+      .map(e=>{
+        const tags=e.tags;
+        // Bygg smart navn fra tilgjengelige tags
+        let name=tags['name:no']||tags.name||null;
+        if(!name){
+          const ref=tags.ref||tags['ref:road']||null;
+          const loc=tags['addr:place']||tags['is_in:city']||tags['is_in']||null;
+          const desc=tags['description:no']||tags.description||null;
+          if(ref&&loc) name=`${ref} – ${loc}`;
+          else if(ref) name=`Rasteplass ${ref}`;
+          else if(loc) name=`Rasteplass ved ${loc}`;
+          else if(desc) name=desc.split('.')[0].substring(0,40);
+          else name=null; // will use type label + coords fallback
+        }
+        return({
+          name,
+          type:tags,
+          toilet:tags.toilets==='yes'||tags.amenity==='toilets',
+          table:tags.picnic_table==='yes',
+          fire:tags.fireplace==='yes',
+          fee:tags.fee==='yes',
+          water:tags.drinking_water==='yes',
+          desc:tags['description:no']||tags.description||null,
+          lat:e.lat||e.center?.lat,
+          lon:e.lon||e.center?.lon,
+        });
+      })
       .filter(e=>e.lat&&e.lon)
       .map(e=>({...e,dist:hav(lat,lon,e.lat,e.lon)}))
       .sort((a,b)=>a.dist-b.dist)
@@ -234,11 +249,25 @@ async function loadFuel(lat,lon,city){
       return;
     }
 
+    // Hent stedsnavn for rasteplasser uten navn via reverse geocoding
+    const unnamed=items.filter(s=>!s.name);
+    await Promise.all(unnamed.map(async s=>{
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${s.lat}&lon=${s.lon}&format=json&zoom=14`,{headers:{'Accept-Language':'no'}});
+        const d=await r.json();
+        const road=d.address?.road||d.address?.motorway||null;
+        const place=d.address?.village||d.address?.town||d.address?.city||d.address?.hamlet||null;
+        if(road&&place) s.name=`${road}, ${place}`;
+        else if(road) s.name=road;
+        else if(place) s.name=`Rasteplass ved ${place}`;
+      }catch(e){}
+    }));
+
     el.innerHTML=items.map(s=>{
       const t=grt(s.type);
       const dc=s.dist<10?'dbn':s.dist<30?'dbm':'dbf';
       const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
-      const name=s.name||t.l;
+      const name=s.name||(t.l+' ('+s.dist.toFixed(1)+' km)');
       const facilities=[
         s.toilet?'🚻 Toalett':'',
         s.table?'🪑 Bord':'',
