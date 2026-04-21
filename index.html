@@ -201,17 +201,22 @@ async function geocode(q){
 }
 
 // ── REVERSE GEOCODE ───────────────────────────────────────
-async function revGeo(lat,lon){
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=15`,{headers:{'Accept-Language':'no'}});
-    const d=await r.json();
-    const road=d.address?.road||d.address?.motorway||d.address?.trunk||null;
-    const place=d.address?.village||d.address?.town||d.address?.city||d.address?.hamlet||null;
-    if(road&&place)return`${road}, ${place}`;
-    if(road)return road;
-    if(place)return`ved ${place}`;
-  }catch(e){}
-  return null;
+// Batcher kall med forsinkelse for å unngå rate-limiting
+async function revGeoAll(items){
+  for(let i=0;i<items.length;i++){
+    if(items[i].name)continue;
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${items[i].lat}&lon=${items[i].lon}&format=json&zoom=15`,{headers:{'Accept-Language':'no'}});
+      const d=await r.json();
+      const road=d.address?.road||d.address?.motorway||d.address?.trunk||d.address?.path||null;
+      const place=d.address?.village||d.address?.town||d.address?.city||d.address?.hamlet||d.address?.municipality||null;
+      if(road&&place)items[i].name=`${road}, ${place}`;
+      else if(road)items[i].name=road;
+      else if(place)items[i].name=`Rasteplass ved ${place}`;
+    }catch(e){}
+    // Vent 300ms mellom hvert kall - unngår rate-limit
+    if(i<items.length-1)await new Promise(r=>setTimeout(r,300));
+  }
 }
 
 // ── RASTEPLASSER ──────────────────────────────────────────
@@ -243,17 +248,17 @@ async function loadRaste(lat,lon,city){
 
     if(!items.length){el.innerHTML='<p class="empty">Ingen rasteplasser funnet innen 80km.</p>';return;}
 
-    // Hent veinavn for alle uten navn
-    await Promise.all(items.filter(s=>!s.name).map(async s=>{
-      s.name=await revGeo(s.lat,s.lon);
-    }));
+    // Hent veinavn sekvensielt med 300ms pause (unngår Nominatim rate-limit)
+    await revGeoAll(items);
 
     el.innerHTML=items.map(s=>{
       const icon=s.bobil?'🚐':'🅿️';
       const label=s.bobil?'Bobilparkering':'Rasteplass';
       const dc=s.dist<10?'dbn':s.dist<30?'dbm':'dbf';
-      const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
-      const name=s.name||`Rasteplass ${s.dist.toFixed(1)} km`;
+      // Google Maps søk på koordinat - viser nøyaktig sted
+      const maps=`https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}`;
+      const dir=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+      const name=s.name||`${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}`;
       const fac=[s.toilet?'🚻 Toalett':'',s.table?'🪑 Bord':'',s.fire?'🔥 Bål':''].filter(Boolean).join(' · ');
       return`<div class="card"><div class="prow">
         <div class="pico">${icon}</div>
@@ -261,7 +266,10 @@ async function loadRaste(lat,lon,city){
           <div class="pname">${name}</div>
           <div class="ptags"><span class="tag tb">${label}</span>${dbadge(s.dist)}</div>
           ${fac?`<div class="psub">${fac}</div>`:''}
-          <div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a></div>
+          <div class="pbtns">
+            <a class="bp" href="${dir}" target="_blank">Veibeskrivelse</a>
+            <a class="bo" href="${maps}" target="_blank">Se på kart</a>
+          </div>
         </div>
       </div></div>`;
     }).join('')+`<div class="src">OpenStreetMap · Rasteplasser innen 80km fra ${city}</div>`;
