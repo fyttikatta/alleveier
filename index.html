@@ -190,109 +190,53 @@ async function geocode(q){
   return{lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name.split(',')[0]};
 }
 
-// RASTEPLASSER - Statens vegvesen NVDB
-const RT={
-  rasteplass:   {i:'🅿️', l:'Rasteplass'},
-  bobilplass:   {i:'🚐', l:'Bobilparkering'},
-  hvileomraade: {i:'🛌', l:'Hvileområde'},
-  default:      {i:'🅿️', l:'Rasteplass'},
-};
-function grt(type){
-  if(!type)return RT.default;
-  const t=type.toLowerCase();
-  if(t.includes('bobil')||t.includes('campingplass'))return RT.bobilplass;
-  if(t.includes('hvile'))return RT.hvileomraade;
-  return RT.rasteplass;
-}
+// RASTEPLASSER
 async function loadFuel(lat,lon,city){
   const el=document.getElementById('fuelContent');
-  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter rasteplasser fra Statens vegvesen…</p></div>';
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Leter etter rasteplasser…</p></div>';
   try{
-    const r=await fetch(`/api/rasteplasser?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
-    if(!r.ok)throw new Error('Server-feil '+r.status);
-    const data=await r.json();
-    if(data.error)throw new Error(data.error);
-
-    let items=(data.items||[])
-      .map(s=>({...s,dist:hav(lat,lon,s.lat,s.lon)}))
+    const q=`[out:json][timeout:25];(node["highway"="rest_area"](around:80000,${lat},${lon});way["highway"="rest_area"](around:80000,${lat},${lon});node["amenity"="rest_area"](around:80000,${lat},${lon});way["amenity"="rest_area"](around:80000,${lat},${lon});node["tourism"="caravan_site"](around:80000,${lat},${lon}););out center 30;`;
+    const data=await ovp(q);
+    let items=(data.elements||[])
+      .map(e=>({
+        lat:e.lat||e.center?.lat,
+        lon:e.lon||e.center?.lon,
+        name:e.tags['name:no']||e.tags.name||null,
+        bobil:e.tags.tourism==='caravan_site',
+        toilet:e.tags.toilets==='yes',
+        table:e.tags.picnic_table==='yes',
+        fire:e.tags.fireplace==='yes',
+      }))
+      .filter(e=>e.lat&&e.lon)
+      .map(e=>({...e,dist:hav(lat,lon,e.lat,e.lon)}))
       .sort((a,b)=>a.dist-b.dist)
       .slice(0,25);
 
-    if(!items.length)throw new Error('ingen');
+    if(!items.length){el.innerHTML='<div class="empty">Ingen rasteplasser funnet innen 80km.</div>';return;}
+
+    // Hent veinavn for alle uten navn
+    await Promise.all(items.filter(s=>!s.name).map(async s=>{
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${s.lat}&lon=${s.lon}&format=json&zoom=15`,{headers:{'Accept-Language':'no'}});
+        const d=await r.json();
+        const road=d.address?.road||d.address?.motorway||d.address?.trunk||null;
+        const place=d.address?.village||d.address?.town||d.address?.city||d.address?.hamlet||null;
+        if(road&&place)s.name=`${road}, ${place}`;
+        else if(road)s.name=road;
+        else if(place)s.name=`Rasteplass ved ${place}`;
+      }catch(e){}
+    }));
 
     el.innerHTML=items.map(s=>{
-      const t=grt(s.type);
+      const icon=s.bobil?'🚐':'🅿️';
+      const label=s.bobil?'Bobilparkering':'Rasteplass';
       const dc=s.dist<10?'dbn':s.dist<30?'dbm':'dbf';
       const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
-      const name=s.name||s.type||'Rasteplass';
-      const facilities=[
-        s.toilet?'🚻 Toalett':'',
-        s.table?'🪑 Bord':'',
-        s.fire?'🔥 Bål/grill':'',
-        s.handicap?'♿ Tilgjengelig':'',
-        '🆓 Gratis',
-      ].filter(Boolean);
-      return`<div class="card">
-        <div class="prow">
-          <div class="pico">${t.i}</div>
-          <div class="pbody">
-            <div class="pname">${name}</div>
-            <div class="ptags">
-              <span class="tag tb">${t.l}</span>
-              <span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span>
-            </div>
-            <div style="font-size:12px;color:var(--text2);margin-top:5px;display:flex;gap:8px;flex-wrap:wrap">
-              ${facilities.map(f=>`<span>${f}</span>`).join('')}
-            </div>
-            <div class="pbtns">
-              <a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }).join('')+`<div class="src">📍 Kilde: Statens vegvesen NVDB · Offisielle rasteplasser nær ${city}</div>`;
-
-  }catch(e){
-    // Fallback til Overpass hvis NVDB feiler
-    el.innerHTML='<div class="info">Henter fra OpenStreetMap som backup…</div>';
-    try{
-      const q=`[out:json][timeout:25];(node["highway"="rest_area"](around:80000,${lat},${lon});way["highway"="rest_area"](around:80000,${lat},${lon});node["amenity"="rest_area"](around:80000,${lat},${lon});node["tourism"="caravan_site"](around:80000,${lat},${lon}););out center 30;`;
-      const data=await ovp(q);
-      let items=(data.elements||[])
-        .map(e=>({
-          lat:e.lat||e.center?.lat,lon:e.lon||e.center?.lon,
-          name:e.tags['name:no']||e.tags.name||null,
-          type:e.tags,toilet:e.tags.toilets==='yes',
-          table:e.tags.picnic_table==='yes',fire:e.tags.fireplace==='yes'
-        }))
-        .filter(e=>e.lat&&e.lon)
-        .map(e=>({...e,dist:hav(lat,lon,e.lat,e.lon)}))
-        .sort((a,b)=>a.dist-b.dist).slice(0,20);
-
-      // Reverse geocode unnamed
-      await Promise.all(items.filter(s=>!s.name).map(async s=>{
-        try{
-          const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${s.lat}&lon=${s.lon}&format=json&zoom=14`,{headers:{'Accept-Language':'no'}});
-          const d=await r.json();
-          const road=d.address?.road||d.address?.motorway||null;
-          const place=d.address?.village||d.address?.town||d.address?.city||d.address?.hamlet||null;
-          if(road&&place)s.name=`${road}, ${place}`;
-          else if(road)s.name=road;
-          else if(place)s.name=`Rasteplass ved ${place}`;
-        }catch(e){}
-      }));
-
-      el.innerHTML=items.map(s=>{
-        const t=grt(s.type?.tourism||s.type?.highway||'');
-        const dc=s.dist<10?'dbn':s.dist<30?'dbm':'dbf';
-        const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
-        const name=s.name||('Rasteplass '+s.dist.toFixed(1)+' km');
-        return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span></div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a></div></div></div></div>`;
-      }).join('')+`<div class="src">OpenStreetMap (backup) · Rasteplasser nær ${city}</div>`;
-    }catch(e2){
-      el.innerHTML=`<div class="err">Kunne ikke laste rasteplasser: ${e2.message}</div>`;
-    }
-  }
+      const name=s.name||`Rasteplass (${s.dist.toFixed(1)} km)`;
+      const fac=[s.toilet?'🚻':'',s.table?'🪑':'',s.fire?'🔥':''].filter(Boolean).join(' ');
+      return`<div class="card"><div class="prow"><div class="pico">${icon}</div><div class="pbody"><div class="pname">${name}</div><div class="ptags"><span class="tag tb">${label}</span><span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span>${fac?`<span style="font-size:13px">${fac}</span>`:''}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a></div></div></div></div>`;
+    }).join('')+`<div class="src">OpenStreetMap · Rasteplasser innen 80km fra ${city}</div>`;
+  }catch(e){el.innerHTML=`<div class="err">Kunne ikke laste rasteplasser: ${e.message}</div>`;}
 }
 
 // WEATHER - Open-Meteo med MetNo Seamless (same model as Yr.no, proper CORS)
