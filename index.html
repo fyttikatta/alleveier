@@ -178,25 +178,9 @@ function dbadge(d){const c=d<5?'dbn':d<20?'dbm':'dbf';return`<span class="db ${c
 function wIcon(c){if(!c)return'🌡️';if(c.includes('thunder'))return'⛈️';if(c.includes('snow'))return'❄️';if(c.includes('sleet'))return'🌨️';if(c.includes('heavyrain'))return'🌧️';if(c.includes('rain')||c.includes('shower'))return'🌦️';if(c.includes('fog'))return'🌫️';if(c.includes('partlycloudy'))return'⛅';if(c.includes('cloudy'))return'☁️';if(c.includes('fair'))return'🌤️';if(c.includes('clear'))return'☀️';return'🌡️';}
 function wDir(d){return['N','NØ','Ø','SØ','S','SV','V','NV'][Math.round(d/45)%8];}
 async function ovp(q){
-  const mirrors=[
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.private.coffee/api/interpreter',
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
-  ];
-  for(const url of mirrors){
-    try{
-      const ctrl=new AbortController();
-      const t=setTimeout(()=>ctrl.abort(),12000);
-      const r=await fetch(url+'?data='+encodeURIComponent(q),{signal:ctrl.signal,mode:'cors'});
-      clearTimeout(t);
-      if(!r.ok)continue;
-      const txt=await r.text();
-      if(!txt||txt[0]!=='{')continue;
-      return JSON.parse(txt);
-    }catch(e){continue;}
-  }
-  throw new Error('Overpass utilgjengelig akkurat nå — prøv igjen om litt');
+  const r=await fetch('/api/overpass?data='+encodeURIComponent(q));
+  if(!r.ok)throw new Error('Server-feil '+r.status);
+  return r.json();
 }
 
 async function geocode(q){
@@ -307,31 +291,37 @@ async function loadWeather(lat,lon,city){
   el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter vær fra Yr.no…</p></div>';
   try{
     // Open-Meteo med MetNo Seamless = samme modell som Yr.no, men CORS-vennlig
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,cloud_cover&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7&models=metno_seamless`;
-    const r=await fetch(url);
+    const r=await fetch(`/api/weather?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
     if(!r.ok)throw new Error('HTTP '+r.status);
-    const d=await r.json();
-    const c=d.current,dd=d.daily;
-    const temp=Math.round(c.temperature_2m);
-    const wind=Math.round(c.wind_speed_10m);
-    const hum=Math.round(c.relative_humidity_2m);
-    const pres=Math.round(c.surface_pressure);
-    const cloud=Math.round(c.cloud_cover);
-    const precip=+(c.precipitation||0).toFixed(1);
-    const wdirStr=wDir(c.wind_direction_10m||0);
-    // Vindavkjøling (Steadman-formelen)
+    const data=await r.json();
+    if(data.error)throw new Error(data.error);
+    const ts=data.properties.timeseries;
+    const now=ts[0],ins=now.data.instant.details;
+    const next=now.data.next_1_hours||now.data.next_6_hours;
+    const sym=next?.summary?.symbol_code||'';
+    const precip=+(next?.details?.precipitation_amount||0).toFixed(1);
+    const temp=Math.round(ins.air_temperature);
+    const wind=Math.round(ins.wind_speed);
+    const hum=Math.round(ins.relative_humidity);
+    const pres=Math.round(ins.air_pressure_at_sea_level);
+    const cloud=Math.round(ins.cloud_area_fraction);
+    const wdirStr=wDir(ins.wind_from_direction||0);
     const vkm=wind*3.6;
     const feels=temp<=10&&vkm>4.8?Math.round(13.12+0.6215*temp-11.37*Math.pow(vkm,0.16)+0.3965*temp*Math.pow(vkm,0.16)):temp;
     const beaufort=wind<1?'Stille':wind<4?'Svak vind':wind<8?'Lett bris':wind<11?'Laber bris':wind<14?'Frisk bris':wind<17?'Liten kuling':wind<21?'Stiv kuling':wind<25?'Sterk kuling':'Storm+';
-    const days=dd.time.map((t,i)=>({
-      day:new Date(t).toLocaleDateString('nb-NO',{weekday:'short'}),
-      icon:omCode(dd.weather_code[i]),
-      hi:Math.round(dd.temperature_2m_max[i]),
-      lo:Math.round(dd.temperature_2m_min[i])
-    }));
+    const days=[],seen=new Set();
+    for(const t of ts){
+      const date=t.time.split('T')[0];
+      if(!seen.has(date)&&t.data.next_6_hours){
+        seen.add(date);
+        const s=t.data.next_6_hours.summary.symbol_code;
+        days.push({day:new Date(t.time).toLocaleDateString('nb-NO',{weekday:'short'}),icon:wCode(s),hi:Math.round(t.data.next_6_hours.details.air_temperature_max??ins.air_temperature),lo:Math.round(t.data.next_6_hours.details.air_temperature_min??ins.air_temperature-2)});
+        if(days.length>=7)break;
+      }
+    }
     el.innerHTML=`<div class="card">
       <div class="wx-hero">
-        <span class="wx-icon">${omCode(c.weather_code)}</span>
+        <span class="wx-icon">${wCode(sym)}</span>
         <div>
           <div class="wx-temp">${temp}°</div>
           <div class="wx-city">${city}</div>
@@ -348,7 +338,7 @@ async function loadWeather(lat,lon,city){
       </div>
       <div class="fc-lbl">7-dagersvarsel</div>
       <div class="fc-row">${days.map((d,i)=>`<div class="fc-item${i===0?' today':''}"><div class="fc-day">${i===0?'I dag':d.day}</div><div class="fc-ico">${d.icon}</div><div class="fc-hi">${d.hi}°</div><div class="fc-lo">${d.lo}°</div></div>`).join('')}</div>
-      <div class="src" style="margin-top:12px">🟢 Yr.no / MetNo modell · open-meteo.com · Oppdateres hver time</div>
+      <div class="src" style="margin-top:12px">🟢 Sanntidsdata · yr.no / api.met.no · Oppdateres hver time</div>
     </div>`;
   }catch(e){
     el.innerHTML=`<div class="err">Kunne ikke hente vær: ${e.message}. Prøv <a href="https://yr.no" target="_blank">yr.no</a></div>`;
