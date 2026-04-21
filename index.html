@@ -126,7 +126,7 @@
 </header>
 
 <nav class="tabs">
-  <button class="tab-btn active" data-tab="fuel"    onclick="sw('fuel',this)">⛽ Drivstoff</button>
+  <button class="tab-btn active" data-tab="fuel"    onclick="sw('fuel',this)">🅿️ Rasteplasser</button>
   <button class="tab-btn"        data-tab="weather" onclick="sw('weather',this)">🌤 Vær</button>
   <button class="tab-btn"        data-tab="sights"  onclick="sw('sights',this)">🥾 Fjellturer</button>
   <button class="tab-btn"        data-tab="stay"    onclick="sw('stay',this)">🏨 Overnatting</button>
@@ -135,7 +135,7 @@
 
 <main>
   <section id="fuel" class="section active">
-    <div class="sec-header"><h2>Drivstoffpriser</h2><p>Nærmeste stasjoner og priser</p></div>
+    <div class="sec-header"><h2>Rasteplasser</h2><p>Rasteplasser, piknik og bobil-parkering</p></div>
     <div id="fuelContent"><div class="loading-state"><div class="spinner"></div><p>Henter stasjoner…</p></div></div>
   </section>
   <section id="weather" class="section">
@@ -158,7 +158,7 @@
 
 <nav class="bottom-nav">
   <div class="bnav-inner">
-    <button class="bnav-btn active" data-tab="fuel"    onclick="sw('fuel',this)"><span class="bnav-icon">⛽</span>Drivstoff</button>
+    <button class="bnav-btn active" data-tab="fuel"    onclick="sw('fuel',this)"><span class="bnav-icon">🅿️</span>Raste</button>
     <button class="bnav-btn"        data-tab="weather" onclick="sw('weather',this)"><span class="bnav-icon">🌤</span>Vær</button>
     <button class="bnav-btn"        data-tab="sights"  onclick="sw('sights',this)"><span class="bnav-icon">🥾</span>Turer</button>
     <button class="bnav-btn"        data-tab="stay"    onclick="sw('stay',this)"><span class="bnav-icon">🏨</span>Sov</button>
@@ -197,19 +197,84 @@ async function geocode(q){
   return{lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name.split(',')[0]};
 }
 
-// FUEL
-const BP={'circle k':{b95:19.49,b98:20.29,d:19.19},'uno-x':{b95:19.39,b98:20.19,d:19.09},'shell':{b95:19.59,b98:20.39,d:19.29},'esso':{b95:19.45,b98:20.25,d:19.15},'st1':{b95:19.42,b98:20.22,d:19.12},'rema':{b95:19.29,b98:null,d:19.01},'best':{b95:19.35,b98:null,d:19.05}};
-const DP={b95:19.44,b98:20.24,d:19.14};
-function gp(n){if(!n)return DP;const nl=n.toLowerCase();for(const[k,v]of Object.entries(BP))if(nl.includes(k))return v;return DP;}
+// RASTEPLASSER
+const RT={
+  rest_area:    {i:'🅿️', l:'Rasteplass'},
+  caravan_site: {i:'🚐', l:'Bobilparkering'},
+  camp_site:    {i:'⛺', l:'Camping'},
+  parking:      {i:'🅿️', l:'Parkering'},
+};
+function grt(tags){
+  if(tags.tourism==='caravan_site')return RT.caravan_site;
+  if(tags.tourism==='camp_site')return RT.camp_site;
+  if(tags.highway==='rest_area')return RT.rest_area;
+  if(tags.amenity==='rest_area')return RT.rest_area;
+  if(tags.amenity==='parking'&&tags.motorroad)return RT.parking;
+  return RT.rest_area;
+}
 async function loadFuel(lat,lon,city){
   const el=document.getElementById('fuelContent');
-  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Henter bensinstasjonar…</p></div>';
+  el.innerHTML='<div class="loading-state"><div class="spinner"></div><p>Leter etter rasteplasser…</p></div>';
   try{
-    const data=await ovp(`[out:json][timeout:25];node["amenity"="fuel"](around:40000,${lat},${lon});out 20;`);
-    const list=(data.elements||[]).filter(e=>e.lat&&e.lon).map(e=>({name:e.tags.brand||e.tags.name||'Bensinstasjon',addr:e.tags['addr:street']?(e.tags['addr:street']+' '+(e.tags['addr:housenumber']||'')).trim():city,lat:e.lat,lon:e.lon,dist:hav(lat,lon,e.lat,e.lon)})).sort((a,b)=>a.dist-b.dist).slice(0,15);
-    if(!list.length)throw new Error('Ingen stasjoner funnet innen 40km');
-    el.innerHTML=list.map(s=>{const p=gp(s.name);const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;return`<div class="card"><div class="fuel-row"><div class="fuel-info"><div class="fname">${s.name}</div><div class="faddr">${s.addr}</div><div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">${dbage(s.dist)}<a href="${maps}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Veibeskrivelse →</a></div></div><div class="fprices"><div class="pc"><div class="pclbl">95</div><div class="pcval pcg">${p.b95.toFixed(2)}</div></div>${p.b98?`<div class="pc"><div class="pclbl">98</div><div class="pcval pcg">${p.b98.toFixed(2)}</div></div>`:''}<div class="pc"><div class="pclbl">Diesel</div><div class="pcval pcb">${p.d.toFixed(2)}</div></div></div></div></div>`;}).join('')+`<div class="src">📍 Reelle stasjoner nær ${city} · Priser er snittprisoversikter per kjede · NOK/liter · <a href="https://drivstoffpriser.no" target="_blank">drivstoffpriser.no</a></div>`;
-  }catch(e){el.innerHTML=`<div class="err">Kunne ikke hente stasjoner: ${e.message}</div>`;}
+    const q=`[out:json][timeout:25];(node["highway"="rest_area"](around:80000,${lat},${lon});node["amenity"="rest_area"](around:80000,${lat},${lon});node["tourism"="caravan_site"](around:80000,${lat},${lon});way["highway"="rest_area"](around:80000,${lat},${lon});way["amenity"="rest_area"](around:80000,${lat},${lon}););out center 40;`;
+    const data=await ovp(q);
+    let items=(data.elements||[])
+      .map(e=>({
+        name:e.tags['name:no']||e.tags.name||null,
+        type:e.tags,
+        toilet:e.tags.toilets==='yes'||e.tags['toilets']===true||e.tags.amenity==='toilets',
+        table:e.tags.picnic_table==='yes'||e.tags['picnic_table']===true,
+        fire:e.tags.fireplace==='yes'||e.tags['fireplace']===true,
+        fee:e.tags.fee==='yes',
+        water:e.tags.drinking_water==='yes',
+        desc:e.tags.description||e.tags['description:no']||null,
+        lat:e.lat||e.center?.lat,
+        lon:e.lon||e.center?.lon,
+      }))
+      .filter(e=>e.lat&&e.lon)
+      .map(e=>({...e,dist:hav(lat,lon,e.lat,e.lon)}))
+      .sort((a,b)=>a.dist-b.dist)
+      .slice(0,25);
+
+    if(!items.length){
+      el.innerHTML='<div class="empty">Ingen rasteplasser funnet innen 80km.</div>';
+      return;
+    }
+
+    el.innerHTML=items.map(s=>{
+      const t=grt(s.type);
+      const dc=s.dist<10?'dbn':s.dist<30?'dbm':'dbf';
+      const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+      const name=s.name||t.l;
+      const facilities=[
+        s.toilet?'🚻 Toalett':'',
+        s.table?'🪑 Bord':'',
+        s.fire?'🔥 Bål/grill':'',
+        s.water?'💧 Drikkevann':'',
+        s.fee?'💰 Avgift':'🆓 Gratis',
+      ].filter(Boolean);
+      return`<div class="card">
+        <div class="prow">
+          <div class="pico">${t.i}</div>
+          <div class="pbody">
+            <div class="pname">${name}</div>
+            <div class="ptags">
+              <span class="tag tb">${t.l}</span>
+              <span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span>
+            </div>
+            ${facilities.length?`<div style="font-size:12px;color:var(--text2);margin-top:5px;display:flex;gap:8px;flex-wrap:wrap">${facilities.map(f=>`<span>${f}</span>`).join('')}</div>`:''}
+            ${s.desc?`<div class="psub" style="margin-top:4px">${s.desc.substring(0,100)}</div>`:''}
+            <div class="pbtns">
+              <a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>
+              <a class="bo" href="https://www.park4night.com/map#${s.lat},${s.lon},14" target="_blank">Park4Night</a>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')+`<div class="src">OpenStreetMap · Rasteplasser innen 80km fra ${city}</div>`;
+  }catch(e){
+    el.innerHTML=`<div class="err">Kunne ikke laste rasteplasser: ${e.message}</div>`;
+  }
 }
 
 // WEATHER - Open-Meteo med MetNo Seamless (same model as Yr.no, proper CORS)
