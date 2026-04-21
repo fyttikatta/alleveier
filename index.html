@@ -215,17 +215,9 @@ async function loadFuel(lat,lon,city){
       .map(e=>{
         const tags=e.tags;
         // Bygg smart navn fra tilgjengelige tags
+        // Kun bruk offisielle navn — aldri beskrivelser som "Hovedrasteplass"
         let name=tags['name:no']||tags.name||null;
-        if(!name){
-          const ref=tags.ref||tags['ref:road']||null;
-          const loc=tags['addr:place']||tags['is_in:city']||tags['is_in']||null;
-          const desc=tags['description:no']||tags.description||null;
-          if(ref&&loc) name=`${ref} – ${loc}`;
-          else if(ref) name=`Rasteplass ${ref}`;
-          else if(loc) name=`Rasteplass ved ${loc}`;
-          else if(desc) name=desc.split('.')[0].substring(0,40);
-          else name=null; // will use type label + coords fallback
-        }
+        if(name&&/^(hoved|liten|mellomstor|stor|liten|rasteplass|rest area)/i.test(name)) name=null;
         return({
           name,
           type:tags,
@@ -267,6 +259,9 @@ async function loadFuel(lat,lon,city){
       const t=grt(s.type);
       const dc=s.dist<10?'dbn':s.dist<30?'dbm':'dbf';
       const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+      // Filtrer ut vage OSM-navn som slapp gjennom
+      const vageName=/^(hoved|liten|mellomstor|stor|rasteplass|rest area|parking)/i;
+      if(s.name&&vageName.test(s.name)) s.name=null;
       const name=s.name||(t.l+' ('+s.dist.toFixed(1)+' km)');
       const facilities=[
         s.toilet?'🚻 Toalett':'',
@@ -288,7 +283,6 @@ async function loadFuel(lat,lon,city){
             ${s.desc?`<div class="psub" style="margin-top:4px">${s.desc.substring(0,100)}</div>`:''}
             <div class="pbtns">
               <a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>
-              <a class="bo" href="https://www.park4night.com/map#${s.lat},${s.lon},14" target="_blank">Park4Night</a>
             </div>
           </div>
         </div>
