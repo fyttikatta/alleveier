@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0a0f1a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Alle Veier"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.svg"/>
+  <title>Alle Veier</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--bg:#0a0f1a;--bg2:#111827;--bg3:#1a2235;--text:#e8edf5;--text2:#8a97b0;--text3:#4a5568;--acc:#4fa8e8;--acc2:#2d7fc1;--grn:#4ade80;--amb:#fbbf24;--red:#f87171;--bdr:rgba(255,255,255,0.07);--bdr2:rgba(255,255,255,0.12);--r:14px;--rs:8px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    .hdr{position:sticky;top:0;z-index:100;background:rgba(10,15,26,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--bdr);padding:env(safe-area-inset-top,0) 0 0}
+    .hdr-top{padding:12px 20px}
+    .logo{font-family:'DM Serif Display',serif;font-size:22px}.logo span{color:var(--acc)}
+    .logo-sub{font-size:11px;color:var(--text2);margin-top:1px}
+    .srow{display:flex;gap:10px;background:var(--bg3);border:1px solid var(--bdr2);border-radius:50px;padding:4px 4px 4px 18px;margin:0 20px 12px}
+    .srow input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px}
+    .srow input::placeholder{color:var(--text3)}
+    .sbtn{background:var(--acc);border:none;border-radius:50px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;padding:9px 20px;cursor:pointer}
+    .locbar{display:flex;align-items:center;gap:8px;padding:8px 20px;background:var(--bg2);border-top:1px solid var(--bdr);font-size:12px;color:var(--text2)}
+    .locdot{width:7px;height:7px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    .locbar b{color:var(--text)}
+    .tabs{display:flex;overflow-x:auto;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--bdr);scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tbtn{flex-shrink:0;padding:11px 14px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-bottom:-1px}
+    .tbtn.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:500}
+    .sec{display:none;padding:20px;padding-bottom:100px}.sec.on{display:block}
+    .sh{margin-bottom:16px}.sh h2{font-family:'DM Serif Display',serif;font-size:22px}.sh p{font-size:13px;color:var(--text2);margin-top:4px}
+    .card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;animation:fi .3s ease both}
+    @keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+    .prow{display:flex;gap:12px;align-items:flex-start}
+    .pico{width:42px;height:42px;flex-shrink:0;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:20px}
+    .pbody{flex:1;min-width:0}
+    .pname{font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ptags{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:5px}
+    .tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+    .tb{background:rgba(79,168,232,0.1);color:var(--acc)}
+    .tg{background:rgba(74,222,128,0.1);color:var(--grn)}
+    .db{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+    .dbn{background:rgba(74,222,128,0.1);color:var(--grn)}.dbm{background:rgba(79,168,232,0.1);color:var(--acc)}.dbf{background:rgba(251,191,36,0.1);color:var(--amb)}
+    .psub{font-size:11px;color:var(--text2);margin-top:3px}
+    .pbtns{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+    .bp{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;background:var(--acc);color:#fff;border:none;padding:6px 14px;border-radius:20px;cursor:pointer;text-decoration:none;display:inline-block}
+    .bo{font-family:'DM Sans',sans-serif;font-size:12px;background:none;color:var(--text2);border:1px solid var(--bdr2);padding:6px 14px;border-radius:20px;text-decoration:none;display:inline-block}
+    .wx-hero{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+    .wx-ico{font-size:52px;line-height:1}
+    .wx-temp{font-family:'DM Serif Display',serif;font-size:52px;line-height:1}
+    .wx-city{font-size:13px;color:var(--text2);margin-top:4px}
+    .wx-feels{font-size:12px;color:var(--text3);margin-top:2px}
+    .wx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+    .wx-m{background:var(--bg3);border-radius:var(--rs);padding:10px}
+    .wx-ml{font-size:11px;color:var(--text2);text-transform:uppercase}
+    .wx-mv{font-size:18px;font-weight:500;margin-top:3px}
+    .wx-mu{font-size:11px;color:var(--text2)}
+    .wx-ms{font-size:11px;color:var(--text3);margin-top:1px}
+    .fc-lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+    .fc-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+    .fc-row::-webkit-scrollbar{display:none}
+    .fci{flex-shrink:0;width:64px;text-align:center;background:var(--bg3);border-radius:var(--rs);padding:8px 4px;border:1px solid var(--bdr)}
+    .fci.today{border-color:var(--acc)}
+    .fci-day{font-size:10px;color:var(--text2)}.fci-ico{font-size:20px;margin:4px 0}
+    .fci-hi{font-size:13px;font-weight:500}.fci-lo{font-size:10px;color:var(--text3)}
+    .spin-wrap{display:flex;flex-direction:column;align-items:center;padding:48px 20px;gap:14px}
+    .spinner{width:30px;height:30px;border:2px solid var(--bdr2);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin-wrap p,.empty{font-size:13px;color:var(--text2);text-align:center;padding:32px 0}
+    .err{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--red);margin-bottom:10px;line-height:1.6}
+    .src{font-size:11px;color:var(--text3);margin-top:4px;padding-top:12px;border-top:1px solid var(--bdr)}
+    .src a{color:var(--acc);text-decoration:none}
+    .bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(10,15,26,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--bdr);padding:6px 0 env(safe-area-inset-bottom,6px);z-index:100}
+    .bnav-inner{display:flex;justify-content:space-around}
+    .nbtn{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:4px 8px;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:9px}
+    .nbtn.on{color:var(--acc)}.nbtn-ico{font-size:19px}
+    @media(max-width:600px){.tabs{display:none}.bnav{display:block}}
+  </style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-top">
+    <div class="logo">Alle<span>Veier</span></div>
+    <div class="logo-sub">Din norske reisekompis</div>
+  </div>
+  <div class="srow">
+    <input id="ci" type="text" placeholder="By eller sted i Norge…" value="Oslo" autocomplete="off"/>
+    <button class="sbtn" onclick="go()">Søk</button>
+  </div>
+  <div class="locbar">
+    <div class="locdot"></div>
+    <span>Viser resultater for <b id="locName">Oslo</b></span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tbtn on" data-tab="raste"   onclick="sw('raste',this)">🅿️ Rasteplasser</button>
+  <button class="tbtn"    data-tab="wx"      onclick="sw('wx',this)">🌤 Vær</button>
+  <button class="tbtn"    data-tab="fjell"   onclick="sw('fjell',this)">🥾 Fjellturer</button>
+  <button class="tbtn"    data-tab="sov"     onclick="sw('sov',this)">🏨 Overnatting</button>
+  <button class="tbtn"    data-tab="mat"     onclick="sw('mat',this)">🍔 Spis & Drikk</button>
+</nav>
+
+<main>
+  <section id="raste" class="sec on">
+    <div class="sh"><h2>Rasteplasser</h2><p>Rasteplasser og bobilparkering i nærheten</p></div>
+    <div id="rasteC"><div class="spin-wrap"><div class="spinner"></div><p>Leter…</p></div></div>
+  </section>
+  <section id="wx" class="sec">
+    <div class="sh"><h2>Vær</h2><p>Sanntidsdata fra Yr.no</p></div>
+    <div id="wxC"><div class="spin-wrap"><div class="spinner"></div><p>Henter vær…</p></div></div>
+  </section>
+  <section id="fjell" class="sec">
+    <div class="sh"><h2>Fjellturer</h2><p>Topper, stier og DNT-hytter i nærheten</p></div>
+    <div id="fjellC"><div class="spin-wrap"><div class="spinner"></div><p>Leter…</p></div></div>
+  </section>
+  <section id="sov" class="sec">
+    <div class="sh"><h2>Overnatting</h2><p>Hotell, hytter og camping i nærheten</p></div>
+    <div id="sovC"><div class="spin-wrap"><div class="spinner"></div><p>Leter…</p></div></div>
+  </section>
+  <section id="mat" class="sec">
+    <div class="sh"><h2>Spis & Drikk</h2><p>Restauranter og kafeer · Data kan være utdatert</p></div>
+    <div id="matC"><div class="spin-wrap"><div class="spinner"></div><p>Leter…</p></div></div>
+  </section>
+</main>
+
+<nav class="bnav">
+  <div class="bnav-inner">
+    <button class="nbtn on" data-tab="raste" onclick="sw('raste',this)"><span class="nbtn-ico">🅿️</span>Raste</button>
+    <button class="nbtn"    data-tab="wx"    onclick="sw('wx',this)"><span class="nbtn-ico">🌤</span>Vær</button>
+    <button class="nbtn"    data-tab="fjell" onclick="sw('fjell',this)"><span class="nbtn-ico">🥾</span>Turer</button>
+    <button class="nbtn"    data-tab="sov"   onclick="sw('sov',this)"><span class="nbtn-ico">🏨</span>Sov</button>
+    <button class="nbtn"    data-tab="mat"   onclick="sw('mat',this)"><span class="nbtn-ico">🍔</span>Mat</button>
+  </div>
+</nav>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────
+function sw(id,el){
+  document.querySelectorAll('.tbtn,.nbtn').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('[data-tab="'+id+'"]').forEach(t=>t.classList.add('on'));
+  document.getElementById(id).classList.add('on');
+}
+function hav(a,b,c,d){
+  const R=6371,dL=(c-a)*Math.PI/180,dO=(d-b)*Math.PI/180,
+    x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dO/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function dbadge(d){const c=d<5?'dbn':d<20?'dbm':'dbf';return`<span class="db ${c}">📍 ${d.toFixed(1)} km</span>`;}
+function wDir(d){return['N','NØ','Ø','SØ','S','SV','V','NV'][Math.round(d/45)%8];}
+function wIco(c){
+  if(!c)return'🌡️';
+  if(c.includes('thunder'))return'⛈️';
+  if(c.includes('snow'))return'❄️';
+  if(c.includes('sleet'))return'🌨️';
+  if(c.includes('heavyrain'))return'🌧️';
+  if(c.includes('rain')||c.includes('shower'))return'🌦️';
+  if(c.includes('fog'))return'🌫️';
+  if(c.includes('partlycloudy'))return'⛅';
+  if(c.includes('cloudy'))return'☁️';
+  if(c.includes('fair'))return'🌤️';
+  if(c.includes('clear'))return'☀️';
+  return'🌡️';
+}
+function spin(){return'<div class="spin-wrap"><div class="spinner"></div><p>Leter…</p></div>';}
+function errBox(msg){return`<div class="err">${msg}</div>`;}
+
+// ── OVERPASS ─────────────────────────────────────────────
+async function ovp(q){
+  const urls=[
+    '/api/overpass?data=',
+    'https://overpass-api.de/api/interpreter?data=',
+    'https://overpass.kumi.systems/api/interpreter?data=',
+    'https://overpass.private.coffee/api/interpreter?data=',
+  ];
+  for(const u of urls){
+    try{
+      const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),15000);
+      const r=await fetch(u+encodeURIComponent(q),{signal:ctrl.signal});
+      clearTimeout(t);
+      if(!r.ok)continue;
+      const txt=await r.text();
+      if(!txt||txt[0]!=='{')continue;
+      return JSON.parse(txt);
+    }catch(e){continue;}
+  }
+  throw new Error('Ingen servere tilgjengelig – prøv igjen om litt');
+}
+
+// ── GEOCODE ───────────────────────────────────────────────
+async function geocode(q){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q+' Norway')+'&format=json&limit=1',{headers:{'Accept-Language':'no'}});
+  const d=await r.json();
+  if(!d.length)throw new Error('Stedet ble ikke funnet');
+  return{lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name.split(',')[0]};
+}
+
+// ── REVERSE GEOCODE ───────────────────────────────────────
+async function revGeo(lat,lon){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=15`,{headers:{'Accept-Language':'no'}});
+    const d=await r.json();
+    const road=d.address?.road||d.address?.motorway||d.address?.trunk||null;
+    const place=d.address?.village||d.address?.town||d.address?.city||d.address?.hamlet||null;
+    if(road&&place)return`${road}, ${place}`;
+    if(road)return road;
+    if(place)return`ved ${place}`;
+  }catch(e){}
+  return null;
+}
+
+// ── RASTEPLASSER ──────────────────────────────────────────
+async function loadRaste(lat,lon,city){
+  const el=document.getElementById('rasteC');
+  el.innerHTML=spin();
+  try{
+    const q=`[out:json][timeout:25];(
+      node["highway"="rest_area"](around:80000,${lat},${lon});
+      way["highway"="rest_area"](around:80000,${lat},${lon});
+      node["amenity"="rest_area"](around:80000,${lat},${lon});
+      way["amenity"="rest_area"](around:80000,${lat},${lon});
+      node["tourism"="caravan_site"](around:80000,${lat},${lon});
+    );out center 30;`;
+    const data=await ovp(q);
+    let items=(data.elements||[])
+      .map(e=>({
+        lat:e.lat||e.center?.lat, lon:e.lon||e.center?.lon,
+        name:e.tags['name:no']||e.tags.name||null,
+        bobil:e.tags.tourism==='caravan_site',
+        toilet:e.tags.toilets==='yes',
+        table:e.tags.picnic_table==='yes',
+        fire:e.tags.fireplace==='yes',
+      }))
+      .filter(e=>e.lat&&e.lon)
+      .map(e=>({...e,dist:hav(lat,lon,e.lat,e.lon)}))
+      .sort((a,b)=>a.dist-b.dist)
+      .slice(0,25);
+
+    if(!items.length){el.innerHTML='<p class="empty">Ingen rasteplasser funnet innen 80km.</p>';return;}
+
+    // Hent veinavn for alle uten navn
+    await Promise.all(items.filter(s=>!s.name).map(async s=>{
+      s.name=await revGeo(s.lat,s.lon);
+    }));
+
+    el.innerHTML=items.map(s=>{
+      const icon=s.bobil?'🚐':'🅿️';
+      const label=s.bobil?'Bobilparkering':'Rasteplass';
+      const dc=s.dist<10?'dbn':s.dist<30?'dbm':'dbf';
+      const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+      const name=s.name||`Rasteplass ${s.dist.toFixed(1)} km`;
+      const fac=[s.toilet?'🚻 Toalett':'',s.table?'🪑 Bord':'',s.fire?'🔥 Bål':''].filter(Boolean).join(' · ');
+      return`<div class="card"><div class="prow">
+        <div class="pico">${icon}</div>
+        <div class="pbody">
+          <div class="pname">${name}</div>
+          <div class="ptags"><span class="tag tb">${label}</span>${dbadge(s.dist)}</div>
+          ${fac?`<div class="psub">${fac}</div>`:''}
+          <div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a></div>
+        </div>
+      </div></div>`;
+    }).join('')+`<div class="src">OpenStreetMap · Rasteplasser innen 80km fra ${city}</div>`;
+  }catch(e){el.innerHTML=errBox('Kunne ikke laste rasteplasser: '+e.message);}
+}
+
+// ── VÆR ───────────────────────────────────────────────────
+async function loadWx(lat,lon,city){
+  const el=document.getElementById('wxC');
+  el.innerHTML=spin();
+  try{
+    const r=await fetch(`/api/weather?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    const ts=d.properties.timeseries,now=ts[0],ins=now.data.instant.details;
+    const next=now.data.next_1_hours||now.data.next_6_hours;
+    const sym=next?.summary?.symbol_code||'';
+    const precip=+(next?.details?.precipitation_amount||0).toFixed(1);
+    const temp=Math.round(ins.air_temperature),wind=Math.round(ins.wind_speed),
+      hum=Math.round(ins.relative_humidity),pres=Math.round(ins.air_pressure_at_sea_level),
+      cloud=Math.round(ins.cloud_area_fraction);
+    const vkm=wind*3.6;
+    const feels=temp<=10&&vkm>4.8?Math.round(13.12+0.6215*temp-11.37*Math.pow(vkm,0.16)+0.3965*temp*Math.pow(vkm,0.16)):temp;
+    const beaufort=wind<1?'Stille':wind<4?'Svak':wind<8?'Lett bris':wind<11?'Laber bris':wind<14?'Frisk bris':wind<17?'Liten kuling':wind<21?'Stiv kuling':'Storm+';
+    const days=[],seen=new Set();
+    for(const t of ts){
+      const date=t.time.split('T')[0];
+      if(!seen.has(date)&&t.data.next_6_hours){
+        seen.add(date);
+        const s=t.data.next_6_hours.summary.symbol_code;
+        days.push({day:new Date(t.time).toLocaleDateString('nb-NO',{weekday:'short'}),ico:wIco(s),hi:Math.round(t.data.next_6_hours.details.air_temperature_max??ins.air_temperature),lo:Math.round(t.data.next_6_hours.details.air_temperature_min??ins.air_temperature-2)});
+        if(days.length>=7)break;
+      }
+    }
+    el.innerHTML=`<div class="card">
+      <div class="wx-hero"><span class="wx-ico">${wIco(sym)}</span><div>
+        <div class="wx-temp">${temp}°</div>
+        <div class="wx-city">${city}</div>
+        <div class="wx-feels">Føles som ${feels}°C</div>
+      </div></div>
+      <div class="wx-grid">
+        <div class="wx-m"><div class="wx-ml">Vind</div><div class="wx-mv">${wind}<span class="wx-mu"> m/s</span></div><div class="wx-ms">${wDir(ins.wind_from_direction||0)} · ${beaufort}</div></div>
+        <div class="wx-m"><div class="wx-ml">Luftfukt.</div><div class="wx-mv">${hum}<span class="wx-mu">%</span></div></div>
+        <div class="wx-m"><div class="wx-ml">Trykk</div><div class="wx-mv">${pres}<span class="wx-mu"> hPa</span></div></div>
+        <div class="wx-m"><div class="wx-ml">Nedbør</div><div class="wx-mv">${precip}<span class="wx-mu"> mm</span></div></div>
+        <div class="wx-m"><div class="wx-ml">Skydekke</div><div class="wx-mv">${cloud}<span class="wx-mu">%</span></div></div>
+        <div class="wx-m"><div class="wx-ml">Vindretning</div><div class="wx-mv">${wDir(ins.wind_from_direction||0)}</div></div>
+      </div>
+      <div class="fc-lbl">7-dagersvarsel</div>
+      <div class="fc-row">${days.map((d,i)=>`<div class="fci${i===0?' today':''}"><div class="fci-day">${i===0?'I dag':d.day}</div><div class="fci-ico">${d.ico}</div><div class="fci-hi">${d.hi}°</div><div class="fci-lo">${d.lo}°</div></div>`).join('')}</div>
+      <div class="src" style="margin-top:12px">🟢 Yr.no / api.met.no · Oppdateres hver time</div>
+    </div>`;
+  }catch(e){el.innerHTML=errBox('Kunne ikke hente vær: '+e.message);}
+}
+
+// ── FJELLTURER ────────────────────────────────────────────
+const HT={peak:{i:'⛰️',l:'Fjelltopp'},saddle:{i:'🗻',l:'Fjellpass'},trailhead:{i:'🥾',l:'Turstartpunkt'},alpine_hut:{i:'🏕️',l:'DNT-hytte'},wilderness_hut:{i:'🪵',l:'Utmarkshytte'},viewpoint:{i:'🔭',l:'Utsiktspunkt'}};
+function ght(t){if(t.natural==='peak')return HT.peak;if(t.natural==='saddle')return HT.saddle;if(t.highway==='trailhead')return HT.trailhead;if(t.tourism==='alpine_hut'||t.amenity==='shelter')return HT.alpine_hut;if(t.tourism==='wilderness_hut')return HT.wilderness_hut;if(t.tourism==='viewpoint')return HT.viewpoint;return HT.trailhead;}
+async function loadFjell(lat,lon,city){
+  const el=document.getElementById('fjellC');
+  el.innerHTML=spin();
+  try{
+    const q=`[out:json][timeout:25];(
+      node["natural"="peak"](around:80000,${lat},${lon});
+      node["natural"="saddle"](around:80000,${lat},${lon});
+      node["highway"="trailhead"](around:80000,${lat},${lon});
+      node["tourism"~"alpine_hut|wilderness_hut|viewpoint"](around:80000,${lat},${lon});
+      node["amenity"="shelter"](around:80000,${lat},${lon});
+    );out 50;`;
+    const data=await ovp(q);
+    let items=(data.elements||[])
+      .filter(e=>e.tags&&(e.tags['name:no']||e.tags.name))
+      .map(e=>({...e,name:e.tags['name:no']||e.tags.name,dist:hav(lat,lon,e.lat,e.lon)}))
+      .filter(e=>e.lat&&e.lon)
+      .sort((a,b)=>a.dist-b.dist).slice(0,25);
+    if(!items.length){el.innerHTML='<p class="empty">Ingen turer funnet. Se <a href="https://ut.no" target="_blank" style="color:var(--acc)">ut.no</a></p>';return;}
+    el.innerHTML=items.map(e=>{
+      const t=ght(e.tags);
+      const dc=e.dist<10?'dbn':e.dist<40?'dbm':'dbf';
+      const maps=`https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`;
+      const ele=e.tags.ele?`<span style="font-size:11px;color:var(--text2)">⬆️ ${e.tags.ele}m</span>`:'';
+      return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${e.name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${e.dist.toFixed(1)} km</span>${ele}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a><a class="bo" href="https://ut.no/kart#14/${e.lat}/${e.lon}" target="_blank">ut.no</a></div></div></div></div>`;
+    }).join('')+`<div class="src">OpenStreetMap · Innen 80km fra ${city} · <a href="https://ut.no" target="_blank">ut.no</a></div>`;
+  }catch(e){el.innerHTML=errBox('Kunne ikke laste turer: '+e.message);}
+}
+
+// ── OVERNATTING ───────────────────────────────────────────
+const OT={hotel:{i:'🏨',l:'Hotell'},hostel:{i:'🛏️',l:'Hostel'},guest_house:{i:'🏡',l:'Pensjonat'},motel:{i:'🚗',l:'Motell'},camp_site:{i:'⛺',l:'Camping'},chalet:{i:'🏔️',l:'Hytte'},alpine_hut:{i:'🏕️',l:'Fjellhytte'},wilderness_hut:{i:'🪵',l:'Utmarkshytte'}};
+async function loadSov(lat,lon,city){
+  const el=document.getElementById('sovC');
+  el.innerHTML=spin();
+  try{
+    const q=`[out:json][timeout:25];(node["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet|alpine_hut|wilderness_hut"](around:40000,${lat},${lon});way["tourism"~"hotel|hostel|guest_house|motel|camp_site|chalet"](around:40000,${lat},${lon}););out center 30;`;
+    const data=await ovp(q);
+    let items=(data.elements||[]).filter(e=>e.tags&&(e.tags.name||e.tags['name:no'])).map(e=>({name:e.tags['name:no']||e.tags.name,type:e.tags.tourism,stars:e.tags.stars||null,phone:e.tags.phone||e.tags['contact:phone']||null,website:e.tags.website||e.tags['contact:website']||null,lat:e.lat||e.center?.lat,lon:e.lon||e.center?.lon,dist:hav(lat,lon,e.lat||e.center?.lat,e.lon||e.center?.lon)})).filter(e=>e.lat&&e.lon).sort((a,b)=>a.dist-b.dist).slice(0,20);
+    if(!items.length){el.innerHTML='<p class="empty">Ingen overnatting funnet innen 40km.</p>';return;}
+    el.innerHTML=items.map(s=>{const t=OT[s.type]||{i:'🏠',l:'Overnatting'};const dc=s.dist<5?'dbn':s.dist<20?'dbm':'dbf';const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;const stars=s.stars?'⭐'.repeat(Math.min(+s.stars,5)):'';return`<div class="card"><div class="prow"><div class="pico">${t.i}</div><div class="pbody"><div class="pname">${s.name}</div><div class="ptags"><span class="tag tb">${t.l}</span><span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span>${stars?`<span style="font-size:12px">${stars}</span>`:''}</div><div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>${s.website?`<a class="bo" href="${s.website}" target="_blank">Nettside</a>`:''} ${s.phone?`<a class="bo" href="tel:${s.phone}">Ring</a>`:''}</div></div></div></div>`;}).join('')+`<div class="src">OpenStreetMap · Overnatting innen 40km fra ${city}</div>`;
+  }catch(e){el.innerHTML=errBox('Kunne ikke laste overnatting: '+e.message);}
+}
+
+// ── MAT OG DRIKK ──────────────────────────────────────────
+const BI={'burger king':'👑','mcdonald':'🍟','kfc':'🍗','subway':'🥖','pizza hut':'🍕','peppes':'🍕','domino':'🍕','taco bell':'🌮','max burger':'🍔','starbucks':'☕','espresso house':'☕','waynes coffee':'☕','7-eleven':'🏪','narvesen':'🏪','deli de luca':'🥐'};
+const FT={fast_food:{i:'🍔',l:'Fastfood'},restaurant:{i:'🍽️',l:'Restaurant'},cafe:{i:'☕',l:'Kafé'},pub:{i:'🍺',l:'Pub'},bar:{i:'🍹',l:'Bar'},food_court:{i:'🏪',l:'Foodcourt'}};
+const CL={pizza:'🍕 Pizza',burger:'🍔 Burger',sushi:'🍣 Sushi',chinese:'🥡 Kinesisk',indian:'🍛 Indisk',thai:'🍜 Thai',italian:'🍝 Italiensk',mexican:'🌮 Meksikansk',kebab:'🥙 Kebab',seafood:'🦞 Sjømat',norwegian:'🇳🇴 Norsk'};
+async function loadMat(lat,lon,city){
+  const el=document.getElementById('matC');
+  el.innerHTML=spin();
+  try{
+    const q=`[out:json][timeout:25];(node["amenity"~"restaurant|fast_food|cafe|pub|bar|food_court"](around:20000,${lat},${lon}););out 40;`;
+    const data=await ovp(q);
+    let items=(data.elements||[]).filter(e=>e.tags&&e.tags.name).map(e=>({name:e.tags.name,type:e.tags.amenity,cuisine:e.tags.cuisine||null,phone:e.tags.phone||null,website:e.tags.website||e.tags['contact:website']||null,hours:e.tags.opening_hours||null,lat:e.lat,lon:e.lon,dist:hav(lat,lon,e.lat,e.lon)})).sort((a,b)=>a.dist-b.dist).slice(0,25);
+    if(!items.length){el.innerHTML='<p class="empty">Ingen spisesteder funnet innen 20km.</p>';return;}
+    el.innerHTML=items.map(s=>{const ti=FT[s.type]||{i:'🍽️',l:'Spisestad'};const nl=s.name.toLowerCase();const bi=Object.entries(BI).find(([b])=>nl.includes(b))?.[1];const icon=bi||ti.i;const dc=s.dist<2?'dbn':s.dist<10?'dbm':'dbf';const maps=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;const cuis=s.cuisine?CL[s.cuisine.split(';')[0]]:null;return`<div class="card"><div class="prow"><div class="pico" style="font-size:22px">${icon}</div><div class="pbody"><div class="pname">${s.name}</div><div class="ptags"><span class="tag tb">${ti.l}</span><span class="db ${dc}">📍 ${s.dist.toFixed(1)} km</span>${cuis?`<span style="font-size:11px;color:var(--text2)">${cuis}</span>`:''}</div>${s.hours?`<div class="psub">🕐 ${s.hours}</div>`:''}<div class="pbtns"><a class="bp" href="${maps}" target="_blank">Veibeskrivelse</a>${s.website?`<a class="bo" href="${s.website}" target="_blank">Nettside</a>`:''} ${s.phone?`<a class="bo" href="tel:${s.phone}">Ring</a>`:''}</div></div></div></div>`;}).join('')+`<div class="src">OpenStreetMap · Innen 20km fra ${city}</div>`;
+  }catch(e){el.innerHTML=errBox('Kunne ikke laste spisesteder: '+e.message);}
+}
+
+// ── MAIN ──────────────────────────────────────────────────
+async function go(){
+  const q=document.getElementById('ci').value.trim()||'Oslo';
+  document.getElementById('locName').textContent='…';
+  ['rasteC','wxC','fjellC','sovC','matC'].forEach(id=>{document.getElementById(id).innerHTML=spin();});
+  try{
+    const geo=await geocode(q);
+    document.getElementById('locName').textContent=geo.name;
+    loadRaste(geo.lat,geo.lon,geo.name);
+    loadWx(geo.lat,geo.lon,geo.name);
+    loadFjell(geo.lat,geo.lon,geo.name);
+    loadSov(geo.lat,geo.lon,geo.name);
+    loadMat(geo.lat,geo.lon,geo.name);
+  }catch(e){
+    ['rasteC','wxC','fjellC','sovC','matC'].forEach(id=>{document.getElementById(id).innerHTML=errBox(e.message);});
+  }
+}
+document.getElementById('ci').addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+go();
+</script>
+</body>
+</html>
