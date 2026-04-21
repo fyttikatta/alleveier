@@ -135,7 +135,7 @@
 
 <main>
   <section id="fuel" class="section active">
-    <div class="sec-header"><h2>Rasteplasser</h2><p>Rasteplasser, piknik og bobil-parkering</p></div>
+    <div class="sec-header"><h2>Rasteplasser</h2><p>Rasteplasser og bobil-parkering i nærheten</p></div>
     <div id="fuelContent"><div class="loading-state"><div class="spinner"></div><p>Henter stasjoner…</p></div></div>
   </section>
   <section id="weather" class="section">
@@ -178,18 +178,27 @@ function dbadge(d){const c=d<5?'dbn':d<20?'dbm':'dbf';return`<span class="db ${c
 function wIcon(c){if(!c)return'🌡️';if(c.includes('thunder'))return'⛈️';if(c.includes('snow'))return'❄️';if(c.includes('sleet'))return'🌨️';if(c.includes('heavyrain'))return'🌧️';if(c.includes('rain')||c.includes('shower'))return'🌦️';if(c.includes('fog'))return'🌫️';if(c.includes('partlycloudy'))return'⛅';if(c.includes('cloudy'))return'☁️';if(c.includes('fair'))return'🌤️';if(c.includes('clear'))return'☀️';return'🌡️';}
 function wDir(d){return['N','NØ','Ø','SØ','S','SV','V','NV'][Math.round(d/45)%8];}
 async function ovp(q){
-  const mirrors=['https://overpass.kumi.systems/api/interpreter','https://overpass-api.de/api/interpreter'];
+  const mirrors=[
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  ];
   for(const url of mirrors){
     try{
-      const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),15000);
-      const r=await fetch(url+'?data='+encodeURIComponent(q),{signal:ctrl.signal});
+      const ctrl=new AbortController();
+      const t=setTimeout(()=>ctrl.abort(),12000);
+      const r=await fetch(url+'?data='+encodeURIComponent(q),{signal:ctrl.signal,mode:'cors'});
       clearTimeout(t);
       if(!r.ok)continue;
-      return JSON.parse(await r.text());
+      const txt=await r.text();
+      if(!txt||txt[0]!=='{')continue;
+      return JSON.parse(txt);
     }catch(e){continue;}
   }
-  throw new Error('Alle Overpass-servere utilgjengelige');
+  throw new Error('Overpass utilgjengelig akkurat nå — prøv igjen om litt');
 }
+
 async function geocode(q){
   const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q+' Norway')+'&format=json&limit=1',{headers:{'Accept-Language':'no'}});
   const d=await r.json();
