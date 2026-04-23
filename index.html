@@ -454,7 +454,7 @@ async function loadWx(lat,lon,city){
       <div class="wx-grid">
         <div class="wx-m"><div class="wx-ml">Vind</div><div class="wx-mv">${wind}<span class="wx-mu"> m/s</span></div><div class="wx-ms">${wDir(ins.wind_from_direction||0)} · ${beaufort}</div></div>
         <div class="wx-m"><div class="wx-ml">Luftfukt.</div><div class="wx-mv">${hum}<span class="wx-mu">%</span></div></div>
-        <div class="wx-m"><div class="wx-ml">Trykk</div><div class="wx-mv">${pres}<span class="wx-mu"> hPa</span></div></div>
+        <div class="wx-m"><div class="wx-ml">Duggpunkt</div><div class="wx-mv">${Math.round(ins.dew_point_temperature??temp-((100-hum)/5))}<span class="wx-mu">°C</span></div></div>
         <div class="wx-m"><div class="wx-ml">Nedbør</div><div class="wx-mv">${precip}<span class="wx-mu"> mm</span></div></div>
         <div class="wx-m"><div class="wx-ml">Skydekke</div><div class="wx-mv">${cloud}<span class="wx-mu">%</span></div></div>
         <div class="wx-m"><div class="wx-ml">Vindretning</div><div class="wx-mv">${wDir(ins.wind_from_direction||0)}</div></div>
